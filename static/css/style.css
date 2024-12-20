@@ -286,11 +286,25 @@
 
   .card, .mobile-card {
     margin-bottom: 0.75rem;
-    padding: 1rem;
+    padding: 1.5rem;
     touch-action: pan-y pinch-zoom;
     background: white;
     border-radius: 6px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+
+  .card h3, .mobile-card h3 {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .card p, .mobile-card p {
+    color: #666;
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
   }
 
   /* Column transition improvements */
