@@ -7,9 +7,6 @@ columns:
         - id: documentation
           title: Project Documentation
           description: Writing README and API documentation
-        - id: card-editing
-          title: Card Editing UI
-          description: Implement UI for editing card titles and descriptions
         - id: error-handling
           title: Improve Error Handling
           description: Add better error messages and recovery mechanisms
@@ -18,7 +15,15 @@ columns:
           description: Write unit tests for parser and API handlers
     - id: in-progress
       title: In Progress
-      tasks: []
+      tasks:
+        - id: card-editing
+          title: Card Editing UI
+          description: |-
+            * Add edit buttons/icons to cards
+            * Create modal/popup edit form
+            * Implement save/cancel actions
+            * Connect to existing update API endpoints
+            * Add validation and error handling
     - id: review
       title: Review
       tasks:
