@@ -228,9 +228,17 @@
 
   .card-list {
     min-height: 150px;
+    position: relative;
   }
 
   .card {
     margin-bottom: 0;
+    position: absolute;
+    width: calc(100% - 1rem);
+    left: 0.5rem;
+  }
+
+  .card[x-show="false"] {
+    display: none !important;
   }
 }
