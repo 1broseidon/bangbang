@@ -140,20 +140,38 @@
 
 
 /* Transitions */
-.slide-in {
-  animation: slideIn 0.2s ease-out;
+.slide-in-right {
+  animation: slideInRight 0.2s ease-out;
 }
 
-.slide-out {
-  animation: slideOut 0.2s ease-in;
+.slide-in-left {
+  animation: slideInLeft 0.2s ease-out;
 }
 
-@keyframes slideIn {
+.slide-out-right {
+  animation: slideOutRight 0.2s ease-in;
+}
+
+.slide-out-left {
+  animation: slideOutLeft 0.2s ease-in;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(-100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
   from { opacity: 0; transform: translateX(100%); }
   to { opacity: 1; transform: translateX(0); }
 }
 
-@keyframes slideOut {
+@keyframes slideOutRight {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(100%); }
+}
+
+@keyframes slideOutLeft {
   from { opacity: 1; transform: translateX(0); }
   to { opacity: 0; transform: translateX(-100%); }
 }

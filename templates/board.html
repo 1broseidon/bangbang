@@ -47,8 +47,12 @@
             class="mobile-column" 
             data-column-id="{{$column.ID}}"
             x-show="currentColumn === {{$index}}"
-            x-transition:enter="slide-in"
-            x-transition:leave="slide-out"
+            :class="{
+              'slide-in-right': $data.swipeDirection === 'right',
+              'slide-in-left': $data.swipeDirection === 'left',
+              'slide-out-right': $data.swipeDirection === 'right',
+              'slide-out-left': $data.swipeDirection === 'left'
+            }"
           >
             <h2>{{$column.Title}}</h2>
             <div class="mobile-card-list" data-column-id="{{$column.ID}}">

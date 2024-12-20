@@ -67,6 +67,7 @@ document.addEventListener('alpine:init', () => {
     isDragging: false,
     touchStartX: 0,
     touchEndX: 0,
+    swipeDirection: null,
 
     init() {
       this.$nextTick(() => {
@@ -97,9 +98,11 @@ document.addEventListener('alpine:init', () => {
         if (Math.abs(swipeDistance) >= minSwipeDistance) {
           if (swipeDistance > 0 && this.currentColumn < this.columnCount - 1) {
             // Swipe left -> next column
+            this.swipeDirection = 'left';
             this.currentColumn++;
           } else if (swipeDistance < 0 && this.currentColumn > 0) {
             // Swipe right -> previous column
+            this.swipeDirection = 'right';
             this.currentColumn--;
           }
         }
