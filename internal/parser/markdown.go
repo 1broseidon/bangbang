@@ -297,6 +297,52 @@ func (p *Parser) UpdateCardDetails(columnID string, cardID string, newTitle stri
 	return p.writeBoard(board)
 }
 
+// CreateCard adds a new card to the specified column
+func (p *Parser) CreateCard(columnID string, title string, description string) error {
+	if p.debug {
+		fmt.Printf("Creating new card - Column: %s, Title: %s\n", columnID, title)
+	}
+
+	board, err := p.ParseBoard()
+	if err != nil {
+		if p.debug {
+			fmt.Printf("Error parsing board: %v\n", err)
+		}
+		return err
+	}
+
+	// Find the target column
+	var targetColumn *models.Column
+	for i := range board.Columns {
+		if board.Columns[i].ID == columnID {
+			targetColumn = &board.Columns[i]
+			break
+		}
+	}
+
+	if targetColumn == nil {
+		if p.debug {
+			fmt.Printf("Error: Column %s not found\n", columnID)
+		}
+		return fmt.Errorf("column %s not found", columnID)
+	}
+
+	// Create new task with unique ID
+	newTask := models.Task{
+		ID:          fmt.Sprintf("task-%d", len(targetColumn.Tasks)+1),
+		Title:       title,
+		Description: description,
+	}
+
+	// Add task to column
+	targetColumn.Tasks = append(targetColumn.Tasks, newTask)
+
+	if p.debug {
+		fmt.Printf("Successfully created new card %s in column %s\n", newTask.ID, columnID)
+	}
+	return p.writeBoard(board)
+}
+
 func (p *Parser) writeBoard(board *models.Board) error {
 	// Marshal board to YAML
 	fm, err := yaml.Marshal(board)

@@ -100,6 +100,7 @@ func (h *Handler) ColumnsHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	case 2:
 		// Expect: PUT /api/columns/{columnID}/cards
+		columnID := parts[0]
 		if parts[1] != "cards" {
 			http.Error(w, "invalid path segment", http.StatusBadRequest)
 			return
