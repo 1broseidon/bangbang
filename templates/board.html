@@ -6,7 +6,11 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   </head>
   <body>
-    <div class="board" id="board">
+    <header class="header">
+      <h1>{{.Title}}</h1>
+    </header>
+    <div class="app-container">
+      <div class="board" id="board">
       {{range .Columns}}
       <div class="column" data-column-id="{{.ID}}">
         <h2>{{.Title}}</h2>
@@ -20,6 +24,7 @@
         </div>
       </div>
       {{end}}
+      </div>
     </div>
     <script src="/static/js/drag-and-drop.js"></script>
   </body>
