@@ -346,10 +346,23 @@
   .mobile-card {
     margin-bottom: 0.5rem;
     padding: 1.5rem;
-    touch-action: pan-y pinch-zoom;
+    touch-action: manipulation;
     background: white;
     border-radius: 6px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .mobile-card-list.dragging {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .sortable-fallback {
+    transform: scale(1.05);
+    opacity: 0.8;
+    background: white;
   }
 
   .card h3,

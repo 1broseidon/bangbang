@@ -118,19 +118,38 @@ document.addEventListener('alpine:init', () => {
           chosenClass: "sortable-chosen",
           dragClass: "sortable-drag",
           // Touch-specific options
-          touchStartThreshold: 5, // Pixels moved before drag starts
-          delay: 150, // Delay before drag starts (helps distinguish from scrolling)
-          delayOnTouchOnly: true, // Only apply delay for touch devices
-          fallbackTolerance: 3, // Pixels of movement allowed before fallback
-          touchStartThreshold: 3, // Pixels moved before drag starts
+          touchStartThreshold: 10, // Increased threshold for better distinction
+          delay: 200, // Increased delay for better scroll vs drag detection
+          delayOnTouchOnly: true,
+          fallbackTolerance: 5, // Increased tolerance
           // Prevent auto-scrolling issues
-          scroll: false,
+          scroll: true, // Enable scrolling
+          scrollSensitivity: 80, // Adjust scroll sensitivity
+          scrollSpeed: 20, // Adjust scroll speed
           // Ensure drag only works vertically
           direction: "vertical",
+          // Improved touch handling
+          forceFallback: true, // Use fallback touch handling
+          fallbackClass: "sortable-fallback",
+          dragoverBubble: false, // Prevent dragover event bubbling
+          // Safety checks
+          onChoose: function(evt) {
+            const touchY = evt.originalEvent?.touches?.[0]?.clientY;
+            if (!touchY || Math.abs(touchY - evt.originalEvent.target.getBoundingClientRect().top) < 30) {
+              evt.preventDefault(); // Prevent drag if touch is too close to edge
+            }
+          },
           onStart: function(evt) {
-            // Disable column navigation while dragging
             const mobileBoard = Alpine.raw(evt.to.closest('[x-data="mobileBoard"]').__x.$data);
             mobileBoard.isDragging = true;
+            evt.from.classList.add('dragging');
+          },
+          onMove: function(evt) {
+            // Additional safety check during movement
+            if (evt.related && !evt.related.classList.contains('mobile-card')) {
+              return false; // Prevent dropping on non-card elements
+            }
+            return true;
           },
           onEnd: async function(evt) {
             const toColumn = evt.to.closest(".mobile-column");
