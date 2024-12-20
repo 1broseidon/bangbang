@@ -17,6 +17,14 @@
   color: var(--primary-inverse);
 }
 
+@media (max-width: 768px) {
+  .header h1 {
+    padding: 1rem;
+    font-size: 1.8rem;
+    text-align: left;
+  }
+}
+
 /* Board layout */
 .board {
   display: flex;
