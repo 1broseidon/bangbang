@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>BangBang Board</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <link rel="stylesheet" href="/static/css/style.css" />
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   </head>
@@ -9,7 +10,7 @@
     <header class="header">
       <h1>{{.Title}}</h1>
     </header>
-    <div class="app-container">
+    <main class="container">
       <div class="board" id="board">
       {{range .Columns}}
       <div class="column" data-column-id="{{.ID}}">
@@ -25,7 +26,7 @@
       </div>
       {{end}}
       </div>
-    </div>
+    </main>
     <script src="/static/js/drag-and-drop.js"></script>
   </body>
 </html>
