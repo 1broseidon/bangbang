@@ -22,6 +22,14 @@ columns:
         - id: mobile-responsive
           title: Mobile Responsiveness
           description: Improving mobile layout and touch interactions
+        - id: mobile-dnd-fix
+          title: Fix Mobile Drag and Drop
+          description: |
+            1. Disable Sortable to verify interference
+            2. Implement touch-specific options
+            3. Add viewport-based initialization
+            4. Test column transitions
+            5. Re-enable drag with safeguards
     - id: review
       title: Review
       tasks:
