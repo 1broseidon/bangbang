@@ -4,15 +4,15 @@ columns:
     - id: todo
       title: To Do
       tasks:
-        - id: test-coverage
-          title: Add Test Coverage
-          description: Write unit tests for parser and API handlers
-        - id: error-handling
-          title: Improve Error Handling
-          description: Add better error messages and recovery mechanisms
         - id: card-editing
           title: Card Editing UI
           description: Implement UI for editing card titles and descriptions
+        - id: error-handling
+          title: Improve Error Handling
+          description: Add better error messages and recovery mechanisms
+        - id: test-coverage
+          title: Add Test Coverage
+          description: Write unit tests for parser and API handlers
     - id: in-progress
       title: In Progress
       tasks:
