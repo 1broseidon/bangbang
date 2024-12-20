@@ -27,7 +27,6 @@
           <div class="column" data-column-id="{{$column.ID}}" data-index="{{$index}}">
             <h2>{{$column.Title}}</h2>
             <div class="desktop-card-list" data-column-id="{{$column.ID}}">
-              <button class="outline" style="width: 100%; margin-top: 1rem;" @click="$dispatch('open-new-task-modal', { columnId: '{{$column.ID}}' })" aria-label="Add new task">Add Task</button>
               {{range $cardIndex, $card := $column.Tasks}}
               <div class="card" data-card-id="{{$card.ID}}">
                 <div class="card-header">
@@ -39,6 +38,7 @@
                 <div x-html="marked.parse(`{{$card.Description}}`)"></div>
               </div>
               {{end}}
+              <button class="outline" style="width: 100%; margin-top: 1rem;" @click="$dispatch('open-new-task-modal', { columnId: '{{$column.ID}}' })" aria-label="Add new task">Add Task</button>
             </div>
           </div>
           {{end}}
