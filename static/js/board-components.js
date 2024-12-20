@@ -67,6 +67,7 @@ document.addEventListener('alpine:init', () => {
     isDragging: false,
     touchStartX: 0,
     touchEndX: 0,
+    touchStartTime: 0,
     swipeDirection: null,
 
     init() {
@@ -82,6 +83,7 @@ document.addEventListener('alpine:init', () => {
       board.addEventListener('touchstart', (e) => {
         if (this.isDragging) return;
         this.touchStartX = e.touches[0].clientX;
+        this.touchStartTime = Date.now();
       }, { passive: true });
 
       board.addEventListener('touchmove', (e) => {
@@ -92,10 +94,16 @@ document.addEventListener('alpine:init', () => {
       board.addEventListener('touchend', () => {
         if (this.isDragging) return;
         
+        // Only process if we have both start and end coordinates
+        if (!this.touchStartX || !this.touchEndX) return;
+        
         const swipeDistance = this.touchStartX - this.touchEndX;
         const minSwipeDistance = 50; // Minimum distance for a swipe
+        const touchDuration = Date.now() - this.touchStartTime;
+        const maxSwipeTime = 300; // Maximum time for a swipe in milliseconds
 
-        if (Math.abs(swipeDistance) >= minSwipeDistance) {
+        // Only process if it's a quick swipe motion
+        if (touchDuration <= maxSwipeTime && Math.abs(swipeDistance) >= minSwipeDistance) {
           if (swipeDistance > 0 && this.currentColumn < this.columnCount - 1) {
             // Swipe left -> next column
             this.swipeDirection = 'left';
@@ -106,6 +114,10 @@ document.addEventListener('alpine:init', () => {
             this.currentColumn--;
           }
         }
+        
+        // Reset touch coordinates
+        this.touchStartX = 0;
+        this.touchEndX = 0;
       });
     },
 
