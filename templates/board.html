@@ -25,7 +25,12 @@
         <div class="desktop-board" id="desktop-board">
           {{range $index, $column := .Columns}}
           <div class="column" data-column-id="{{$column.ID}}" data-index="{{$index}}">
-            <h2>{{$column.Title}}</h2>
+            <div class="column-header">
+              <h2>{{$column.Title}}</h2>
+              <button class="icon-button" @click="$dispatch('open-new-task-modal', { columnId: '{{$column.ID}}' })" aria-label="Add new task">
+                <img src="/static/img/add-task.svg" alt="Add task" class="add-task-icon">
+              </button>
+            </div>
             <div class="desktop-card-list" data-column-id="{{$column.ID}}">
               {{range $cardIndex, $card := $column.Tasks}}
               <div class="card" data-card-id="{{$card.ID}}">
@@ -38,7 +43,6 @@
                 <div x-html="marked.parse(`{{$card.Description}}`)"></div>
               </div>
               {{end}}
-              <button class="outline" style="width: 100%; margin-top: 1rem;" @click="$dispatch('open-new-task-modal', { columnId: '{{$column.ID}}' })" aria-label="Add new task">Add Task</button>
             </div>
           </div>
           {{end}}
