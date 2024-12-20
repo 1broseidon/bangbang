@@ -73,6 +73,7 @@ func (p *Parser) UpdateCardsOrder(columnID string, taskIDs []string) error {
 		return err
 	}
 
+	// Find target column
 	var targetColumnIndex = -1
 	for i, col := range board.Columns {
 		if col.ID == columnID {
@@ -87,30 +88,47 @@ func (p *Parser) UpdateCardsOrder(columnID string, taskIDs []string) error {
 	}
 
 	fmt.Printf("Found target column at index: %d\n", targetColumnIndex)
-	// Reorder tasks inside the target column
-	column := board.Columns[targetColumnIndex]
 
-	// Create a map of tasks by ID in the column
-	taskMap := make(map[string]models.Task, len(column.Tasks))
-	for _, t := range column.Tasks {
-		taskMap[t.ID] = t
+	// Create a map of all tasks across all columns
+	allTasks := make(map[string]models.Task)
+	for _, col := range board.Columns {
+		for _, t := range col.Tasks {
+			allTasks[t.ID] = t
+		}
 	}
 
+	// Build new task list for target column
 	newTasks := make([]models.Task, 0, len(taskIDs))
 	for _, tid := range taskIDs {
-		t, ok := taskMap[tid]
+		t, ok := allTasks[tid]
 		if !ok {
-			return fmt.Errorf("task %s not found in column %s", tid, columnID)
+			return fmt.Errorf("task %s not found", tid)
 		}
 		newTasks = append(newTasks, t)
 	}
 
-	// Check if we didn't miss any tasks
-	if len(newTasks) != len(column.Tasks) {
-		fmt.Printf("Error: Task count mismatch - Expected: %d, Got: %d\n", len(column.Tasks), len(newTasks))
-		return fmt.Errorf("mismatch in tasks count for reorder request in column %s", columnID)
+	// Remove tasks that moved to target column from other columns
+	for i := range board.Columns {
+		if i == targetColumnIndex {
+			continue
+		}
+		remainingTasks := make([]models.Task, 0)
+		for _, t := range board.Columns[i].Tasks {
+			found := false
+			for _, tid := range taskIDs {
+				if t.ID == tid {
+					found = true
+					break
+				}
+			}
+			if !found {
+				remainingTasks = append(remainingTasks, t)
+			}
+		}
+		board.Columns[i].Tasks = remainingTasks
 	}
 
+	// Update target column with new task order
 	fmt.Printf("Updating column %s with new task order: %v\n", columnID, taskIDs)
 	board.Columns[targetColumnIndex].Tasks = newTasks
 
