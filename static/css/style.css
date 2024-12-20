@@ -264,9 +264,9 @@
 
 .mobile-column {
   position: absolute;
-  width: 100%;
+  width: calc(100% - 2rem);
   height: 100%;
-  left: 0;
+  left: 1rem;
   top: 0;
   opacity: 0;
   pointer-events: none;
