@@ -84,30 +84,8 @@ document.addEventListener('alpine:init', () => {
     },
 
     initializeMobileSort() {
-      document.querySelectorAll(".mobile-card-list").forEach((cardList) => {
-        Sortable.create(cardList, {
-          group: "shared-mobile",
-          animation: 150,
-          ghostClass: "sortable-ghost",
-          chosenClass: "sortable-chosen",
-          dragClass: "sortable-drag",
-          onEnd: async function(evt) {
-            const toColumn = evt.to.closest(".mobile-column");
-            const toColumnId = toColumn.dataset.columnId;
-            try {
-              const taskIds = Array.from(toColumn.querySelectorAll(".mobile-card"))
-                .map((card) => card.dataset.cardId)
-                .filter(Boolean);
-              await updateOrder(`/api/columns/${toColumnId}/cards/order`, {
-                cards: taskIds,
-              });
-            } catch (error) {
-              showError("Failed to update task status: " + error.message);
-              window.location.reload();
-            }
-          },
-        });
-      });
+      // Temporarily disabled Sortable on mobile to debug layout issues
+      console.log('Mobile sorting disabled for debugging');
     }
   }));
 });
