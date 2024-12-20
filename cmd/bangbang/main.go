@@ -1,22 +1,23 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 
+	"github.com/spf13/pflag"
 	"github.com/yourusername/bangbang/internal/api"
 	"github.com/yourusername/bangbang/internal/parser"
 )
 
 func main() {
-	dirPath := flag.String("dir", "./example", "Directory containing board.md")
-	flag.Parse()
+	dirPath := pflag.String("dir", "./example", "Directory containing board.md")
+	debug := pflag.BoolP("debug", "D", false, "Enable debug logging")
+	pflag.Parse()
 
-	// Create parser instance
-	p := parser.NewParser(*dirPath)
+	// Create parser instance with debug flag
+	p := parser.NewParser(*dirPath, *debug)
 
 	// Create API handler
 	h := &api.Handler{
