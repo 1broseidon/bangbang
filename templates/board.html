@@ -36,6 +36,7 @@
         },
         scrollToColumn(index) {
           const board = document.getElementById('board');
+          if (!board) return;
           const columns = board.querySelectorAll('.column');
           if (columns[index]) {
             columns[index].scrollIntoView({ behavior: 'smooth', inline: 'start' });
@@ -43,16 +44,19 @@
         },
         updateProgress() {
           const board = document.getElementById('board');
+          if (!board) return;
           const scrollPosition = board.scrollLeft;
           const columnWidth = window.innerWidth;
           const newColumn = Math.round(scrollPosition / columnWidth);
-          if (this.currentColumn !== newColumn) {
+          if (this.currentColumn !== newColumn && newColumn >= 0 && newColumn < this.columnCount) {
             this.currentColumn = newColumn;
           }
         },
         init() {
           if (window.innerWidth <= 768) {
-            this.scrollToColumn(0);
+            this.$nextTick(() => {
+              this.scrollToColumn(0);
+            });
           }
         }
       }"
