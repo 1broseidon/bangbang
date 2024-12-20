@@ -273,7 +273,8 @@
     scroll-snap-align: center;
     scroll-snap-stop: always;
     overflow-y: auto;
-    border-radius: 0;
+    border-radius: 8px;
+    background: #f1f1f1;
   }
 
   .card-list {
@@ -283,10 +284,13 @@
     margin: 0;
   }
 
-  .card {
+  .card, .mobile-card {
     margin-bottom: 0.75rem;
     padding: 1rem;
     touch-action: pan-y pinch-zoom;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   }
 
   /* Column transition improvements */
