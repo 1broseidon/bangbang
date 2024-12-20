@@ -1,6 +1,5 @@
 # Binaries
 bangbang
-*.exe
 
 # Build directory
 dist/
@@ -11,3 +10,5 @@ dist/
 
 # OS files
 .DS_Store
+.aider*
+.bangbang.md

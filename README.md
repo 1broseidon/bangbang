@@ -18,10 +18,17 @@ BangBang is a lightweight, portable Kanban board that lives in your project dire
 
 ## 🚀 Quick Start
 
-```bash
-# Install bangbang
-go install github.com/1broseidon/bangbang/cmd/bangbang@latest
+Install bangbang:
 
+```bash
+go install github.com/1broseidon/bangbang@latest
+```
+
+Note: Requires Go 1.22 or later
+
+Run it:
+
+```bash
 # Run in any directory
 bangbang
 
@@ -48,7 +55,7 @@ git clone https://github.com/1broseidon/bangbang.git
 go mod download
 
 # Run the server
-go run cmd/bangbang/main.go
+go run main.go
 ```
 
 ## 🎯 Why BangBang?
