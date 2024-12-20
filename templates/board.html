@@ -29,7 +29,10 @@
             <div class="desktop-card-list" data-column-id="{{$column.ID}}">
               {{range $cardIndex, $card := $column.Tasks}}
               <div class="card" data-card-id="{{$card.ID}}">
-                <h3>{{$card.Title}}</h3>
+                <div class="grid">
+                  <h3>{{$card.Title}}</h3>
+                  <button class="outline secondary" @click="openEditModal($event, '{{$column.ID}}', '{{$card.ID}}', '{{$card.Title}}', `{{$card.Description}}`)" style="margin: 0">Edit</button>
+                </div>
                 <div x-html="marked.parse(`{{$card.Description}}`)"></div>
               </div>
               {{end}}
@@ -78,6 +81,32 @@
 
       </div>
     </main>
+
+    <!-- Card Edit Modal -->
+    <dialog id="edit-modal" x-data="cardEditModal">
+      <article>
+        <header>
+          <h3>Edit Card</h3>
+        </header>
+        <form @submit.prevent="saveCard">
+          <label for="card-title">
+            Title
+            <input type="text" id="card-title" x-model="form.title" required>
+          </label>
+          
+          <label for="card-description">
+            Description
+            <textarea id="card-description" x-model="form.description" rows="4"></textarea>
+          </label>
+          
+          <footer class="grid">
+            <button type="button" class="secondary" @click="closeModal">Cancel</button>
+            <button type="submit">Save</button>
+          </footer>
+        </form>
+      </article>
+    </dialog>
+
     <script src="/static/js/board-components.js"></script>
   </body>
 </html>

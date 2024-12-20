@@ -190,6 +190,52 @@ document.addEventListener('alpine:init', () => {
 });
 
 // Helper functions
+// Card edit modal component
+Alpine.data('cardEditModal', () => ({
+  form: {
+    title: '',
+    description: '',
+    columnId: '',
+    cardId: ''
+  },
+
+  openEditModal(event, columnId, cardId, title, description) {
+    this.form.columnId = columnId;
+    this.form.cardId = cardId;
+    this.form.title = title;
+    this.form.description = description;
+    document.getElementById('edit-modal').showModal();
+  },
+
+  closeModal() {
+    document.getElementById('edit-modal').close();
+  },
+
+  async saveCard() {
+    try {
+      const response = await fetch(`/api/columns/${this.form.columnId}/cards/${this.form.cardId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: this.form.title,
+          description: this.form.description
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update card: ${response.statusText}`);
+      }
+
+      this.closeModal();
+      window.location.reload();
+    } catch (error) {
+      showError(error.message);
+    }
+  }
+}));
+
 function showError(message) {
   console.error(message);
 }
