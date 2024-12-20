@@ -13,6 +13,7 @@ import (
 
 func main() {
 	dirPath := pflag.StringP("dir", "d", ".", "Directory containing .bangbang.md")
+	port := pflag.IntP("port", "p", 8080, "Port to run the server on")
 	debug := pflag.BoolP("debug", "D", false, "Enable debug logging")
 	pflag.Parse()
 
@@ -47,6 +48,6 @@ func main() {
 	})
 
 	fmt.Printf("Starting bangbang with directory: %s\n", *dirPath)
-	fmt.Println("Server running at http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	fmt.Printf("Server running at http://localhost:%d\n", *port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }
