@@ -12,7 +12,7 @@ import (
 
 type Parser struct {
 	boardFilePath string
-	debug        bool
+	debug         bool
 }
 
 func NewParser(dir string, debug bool) *Parser {
@@ -20,7 +20,7 @@ func NewParser(dir string, debug bool) *Parser {
 	boardFile := filepath.Join(dir, "board.md")
 	return &Parser{
 		boardFilePath: boardFile,
-		debug:        debug,
+		debug:         debug,
 	}
 }
 
@@ -70,7 +70,7 @@ func (p *Parser) UpdateCardsOrder(columnID string, taskIDs []string) error {
 	if p.debug {
 		fmt.Printf("Updating cards order - Column: %s, Tasks: %v\n", columnID, taskIDs)
 	}
-	
+
 	board, err := p.ParseBoard()
 	if err != nil {
 		if p.debug {
@@ -151,7 +151,7 @@ func (p *Parser) UpdateCardsOrder(columnID string, taskIDs []string) error {
 		}
 		return err
 	}
-	
+
 	if p.debug {
 		fmt.Printf("Successfully updated cards order in column %s\n", columnID)
 	}
@@ -186,6 +186,97 @@ func (p *Parser) extractBoardFromFrontMatter(content []byte, board *models.Board
 		return fmt.Errorf("failed to parse board frontmatter: %w", err)
 	}
 	return nil
+}
+
+// UpdateColumnTitle updates the title of a column with the given ID
+func (p *Parser) UpdateColumnTitle(columnID string, newTitle string) error {
+	if p.debug {
+		fmt.Printf("Updating column title - Column: %s, New Title: %s\n", columnID, newTitle)
+	}
+
+	board, err := p.ParseBoard()
+	if err != nil {
+		if p.debug {
+			fmt.Printf("Error parsing board: %v\n", err)
+		}
+		return err
+	}
+
+	// Find and update the target column
+	found := false
+	for i := range board.Columns {
+		if board.Columns[i].ID == columnID {
+			board.Columns[i].Title = newTitle
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		if p.debug {
+			fmt.Printf("Error: Column %s not found\n", columnID)
+		}
+		return fmt.Errorf("column %s not found", columnID)
+	}
+
+	if p.debug {
+		fmt.Printf("Successfully updated title for column %s\n", columnID)
+	}
+	return p.writeBoard(board)
+}
+
+// UpdateCardDetails updates the title and description of a card in the specified column
+func (p *Parser) UpdateCardDetails(columnID string, cardID string, newTitle string, newDescription string) error {
+	if p.debug {
+		fmt.Printf("Updating card details - Column: %s, Card: %s\n", columnID, cardID)
+	}
+
+	board, err := p.ParseBoard()
+	if err != nil {
+		if p.debug {
+			fmt.Printf("Error parsing board: %v\n", err)
+		}
+		return err
+	}
+
+	// Find the target column
+	var targetColumn *models.Column
+	for i := range board.Columns {
+		if board.Columns[i].ID == columnID {
+			targetColumn = &board.Columns[i]
+			break
+		}
+	}
+
+	if targetColumn == nil {
+		if p.debug {
+			fmt.Printf("Error: Column %s not found\n", columnID)
+		}
+		return fmt.Errorf("column %s not found", columnID)
+	}
+
+	// Find and update the target card
+	found := false
+	for i := range targetColumn.Tasks {
+		if targetColumn.Tasks[i].ID == cardID {
+			targetColumn.Tasks[i].Title = newTitle
+			targetColumn.Tasks[i].Description = newDescription
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		if p.debug {
+			fmt.Printf("Error: Card %s not found in column %s\n", cardID, columnID)
+		}
+		return fmt.Errorf("card %s not found in column %s", cardID, columnID)
+	}
+
+	if p.debug {
+		fmt.Printf("Successfully updated details for card %s in column %s\n", cardID, columnID)
+	}
+	return p.writeBoard(board)
 }
 
 func (p *Parser) writeBoard(board *models.Board) error {

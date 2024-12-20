@@ -26,7 +26,7 @@ func main() {
 
 	// Register API endpoints
 	http.HandleFunc("/api/columns/order", h.UpdateColumnsOrder)
-	http.HandleFunc("/api/columns/", h.UpdateCardsOrder)
+	http.HandleFunc("/api/columns/", h.ColumnsHandler)
 
 	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
