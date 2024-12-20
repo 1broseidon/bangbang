@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	dirPath := pflag.String("dir", ".", "Directory containing .bangbang.md")
+	dirPath := pflag.StringP("dir", "d", ".", "Directory containing .bangbang.md")
 	debug := pflag.BoolP("debug", "D", false, "Enable debug logging")
 	pflag.Parse()
 
