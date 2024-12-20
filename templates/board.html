@@ -57,22 +57,11 @@
         <div class="card-list" data-column-id="{{$column.ID}}">
           {{range $cardIndex, $card := $column.Tasks}}
           <div class="card" 
-               data-card-id="{{$card.ID}}"
-               x-show="window.innerWidth > 768 || currentCard === {{$cardIndex}}"
-               x-transition:enter="fade-in"
-               x-transition:leave="fade-out">
+               data-card-id="{{$card.ID}}">
             <h3>{{$card.Title}}</h3>
             <p>{{$card.Description}}</p>
           </div>
           {{end}}
-        </div>
-        <!-- Mobile Card Navigation -->
-        <div class="mobile-card-nav" x-cloak>
-          <button @click="prevCard()" 
-                  :disabled="currentCard === 0">&uarr;</button>
-          <span x-text="`Card ${currentCard + 1} of ${getColumnCards()}`"></span>
-          <button @click="nextCard()" 
-                  :disabled="currentCard === getColumnCards() - 1">&darr;</button>
         </div>
       </div>
       {{end}}

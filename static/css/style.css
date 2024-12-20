@@ -172,21 +172,6 @@
   to { opacity: 0; transform: translateX(-100%); }
 }
 
-/* Mobile card navigation */
-.mobile-card-nav {
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem;
-  margin-top: 1rem;
-  background: var(--card-background-color);
-  border-radius: var(--border-radius);
-}
-
-.mobile-card-nav button {
-  margin: 0;
-  padding: 0.25rem 1rem;
-}
 
 /* Fade animations for cards */
 .fade-in {
@@ -228,31 +213,13 @@
 
   .card-list {
     min-height: 150px;
-    position: relative;
-    height: 200px;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 
   .card {
     margin-bottom: 0;
-    position: absolute;
-    width: calc(100% - 1rem);
-    left: 0.5rem;
-    top: 0;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(20px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-  }
-
-  .card[x-show]:not([style*="display: none"]) {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-  }
-
-  .card[x-show="false"],
-  .card[style*="display: none"] {
-    display: none !important;
+    width: 100%;
   }
 }
