@@ -3,7 +3,6 @@ package parser
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
