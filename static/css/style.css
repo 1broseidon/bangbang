@@ -22,16 +22,13 @@
 
 @keyframes titlePulse {
   0% {
-    transform: scale(1);
-    opacity: 1;
+    color: var(--h1-color);
   }
   50% {
-    transform: scale(1.02);
-    opacity: 0.8;
+    color: var(--primary);
   }
   100% {
-    transform: scale(1);
-    opacity: 1;
+    color: var(--h1-color);
   }
 }
 
