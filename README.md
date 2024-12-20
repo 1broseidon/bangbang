@@ -6,6 +6,8 @@
 
 BangBang is a lightweight, portable Kanban board that lives in your project directory. It uses a single markdown file (`.bangbang.md`) to store your board's data, making it perfect for version control and easy sharing with your team.
 
+![Example Project](example_project.png)
+
 ## ✨ Features
 
 - 🚀 **Instant Setup**: Just run `bangbang` in any directory to create a new board
