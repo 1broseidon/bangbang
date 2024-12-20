@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>## {{.Title}}</title>
+    <title>{{.Title}}</title>
     <link rel="stylesheet" href="/static/css/lib/pico.min.css" />
     <link rel="stylesheet" href="/static/css/style.css" />
     <script src="/static/js/lib/sortable.min.js"></script>
@@ -16,6 +16,9 @@
           editing: false, 
           title: '{{.Title}}',
           originalTitle: '{{.Title}}',
+          displayTitle() {
+            return '## ' + this.title;
+          },
           async save() {
             try {
               const response = await fetch('/api/board/title', {
@@ -39,7 +42,7 @@
         @blur="editing = false; title = originalTitle"
         :class="{ 'editing': editing }"
       >
-        <template x-if="!editing">## <span x-text="title"></span></template>
+        <template x-if="!editing"><span x-text="displayTitle()"></span></template>
         <div x-show="editing" class="title-input-wrapper">
           <span class="title-prefix">##&nbsp;</span>
           <input
