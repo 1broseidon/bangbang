@@ -1,0 +1,4 @@
+excludes:
+  - .bangbang.md
+  - static/js/lib/
+  - static/css/lib/
