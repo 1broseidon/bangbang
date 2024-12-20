@@ -8,12 +8,19 @@ document.addEventListener('alpine:init', () => {
       cardId: ''
     },
 
-    openEditModal(event, columnId, cardId, title, description) {
-      this.form.columnId = columnId;
-      this.form.cardId = cardId;
-      this.form.title = title;
-      this.form.description = description;
-      document.getElementById('edit-modal').showModal();
+    init() {
+      this.$watch('form', (value) => {
+        console.log('Form updated:', value);
+      });
+
+      window.addEventListener('open-edit-modal', (event) => {
+        const { columnId, cardId, title, description } = event.detail;
+        this.form.columnId = columnId;
+        this.form.cardId = cardId;
+        this.form.title = title;
+        this.form.description = description;
+        document.getElementById('edit-modal').showModal();
+      });
     },
 
     closeModal() {

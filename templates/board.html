@@ -31,7 +31,7 @@
               <div class="card" data-card-id="{{$card.ID}}">
                 <div class="grid">
                   <h3>{{$card.Title}}</h3>
-                  <button class="outline secondary" @click="openEditModal($event, '{{$column.ID}}', '{{$card.ID}}', '{{$card.Title}}', `{{$card.Description}}`)" style="margin: 0">Edit</button>
+                  <button class="outline secondary" @click="$dispatch('open-edit-modal', { columnId: '{{$column.ID}}', cardId: '{{$card.ID}}', title: '{{$card.Title}}', description: `{{$card.Description}}` })" style="margin: 0">Edit</button>
                 </div>
                 <div x-html="marked.parse(`{{$card.Description}}`)"></div>
               </div>
