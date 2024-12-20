@@ -65,23 +65,45 @@ document.addEventListener('alpine:init', () => {
     currentColumn: 0,
     columnCount: document.querySelectorAll('.mobile-column').length,
     isDragging: false,
+    touchStartX: 0,
+    touchEndX: 0,
 
     init() {
       this.$nextTick(() => {
         this.initializeMobileSort();
+        this.initializeTouchEvents();
       });
     },
 
-    nextColumn() {
-      if (!this.isDragging && this.currentColumn < this.columnCount - 1) {
-        this.currentColumn++;
-      }
-    },
+    initializeTouchEvents() {
+      const board = this.$el;
+      
+      board.addEventListener('touchstart', (e) => {
+        if (this.isDragging) return;
+        this.touchStartX = e.touches[0].clientX;
+      }, { passive: true });
 
-    prevColumn() {
-      if (!this.isDragging && this.currentColumn > 0) {
-        this.currentColumn--;
-      }
+      board.addEventListener('touchmove', (e) => {
+        if (this.isDragging) return;
+        this.touchEndX = e.touches[0].clientX;
+      }, { passive: true });
+
+      board.addEventListener('touchend', () => {
+        if (this.isDragging) return;
+        
+        const swipeDistance = this.touchStartX - this.touchEndX;
+        const minSwipeDistance = 50; // Minimum distance for a swipe
+
+        if (Math.abs(swipeDistance) >= minSwipeDistance) {
+          if (swipeDistance > 0 && this.currentColumn < this.columnCount - 1) {
+            // Swipe left -> next column
+            this.currentColumn++;
+          } else if (swipeDistance < 0 && this.currentColumn > 0) {
+            // Swipe right -> previous column
+            this.currentColumn--;
+          }
+        }
+      });
     },
 
     initializeMobileSort() {

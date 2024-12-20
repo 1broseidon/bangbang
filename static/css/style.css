@@ -138,20 +138,6 @@
   display: none !important;
 }
 
-/* Mobile navigation */
-.mobile-nav {
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 1rem;
-  margin-bottom: 1rem;
-  background: var(--card-background-color);
-  border-radius: var(--border-radius);
-}
-
-.mobile-nav button {
-  margin: 0;
-}
 
 /* Transitions */
 .slide-in {
@@ -225,11 +211,13 @@
   top: 0;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease;
   background: white;
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  touch-action: pan-x pinch-zoom;
+  will-change: transform, opacity;
 }
 
 .mobile-column h2 {
