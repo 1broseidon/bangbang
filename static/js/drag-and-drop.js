@@ -68,16 +68,22 @@ document.addEventListener("DOMContentLoaded", function () {
         const movedTaskId = evt.item.dataset.cardId;
 
         try {
-          // Update the task's status in the target column
-          // This will also handle removing it from the source column
-          await updateOrder(`/api/columns/${toColumnId}/cards/order`, {
-            cards: [movedTaskId],
+          const taskIds = getTaskIds(toColumn.querySelector('.card-list'));
+          console.log("Sending card order update:", {
+            columnId: toColumnId,
+            taskIds: taskIds,
+            movedTaskId: movedTaskId
           });
 
-          // Log the successful move
-          console.log("Task moved:", {
+          // Update the task's status in the target column
+          await updateOrder(`/api/columns/${toColumnId}/cards/order`, {
+            cards: taskIds,
+          });
+
+          console.log("Task move successful:", {
             taskId: movedTaskId,
             toColumn: toColumnId,
+            newOrder: taskIds
           });
         } catch (error) {
           showError("Failed to update task status: " + error.message);

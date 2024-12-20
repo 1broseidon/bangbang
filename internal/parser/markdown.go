@@ -65,8 +65,11 @@ func (p *Parser) UpdateColumnsOrder(columnIDs []string) error {
 }
 
 func (p *Parser) UpdateCardsOrder(columnID string, taskIDs []string) error {
+	fmt.Printf("Updating cards order - Column: %s, Tasks: %v\n", columnID, taskIDs)
+	
 	board, err := p.ParseBoard()
 	if err != nil {
+		fmt.Printf("Error parsing board: %v\n", err)
 		return err
 	}
 
@@ -79,9 +82,11 @@ func (p *Parser) UpdateCardsOrder(columnID string, taskIDs []string) error {
 	}
 
 	if targetColumnIndex == -1 {
+		fmt.Printf("Error: Column %s not found\n", columnID)
 		return fmt.Errorf("column %s not found", columnID)
 	}
 
+	fmt.Printf("Found target column at index: %d\n", targetColumnIndex)
 	// Reorder tasks inside the target column
 	column := board.Columns[targetColumnIndex]
 
@@ -102,12 +107,21 @@ func (p *Parser) UpdateCardsOrder(columnID string, taskIDs []string) error {
 
 	// Check if we didn't miss any tasks
 	if len(newTasks) != len(column.Tasks) {
+		fmt.Printf("Error: Task count mismatch - Expected: %d, Got: %d\n", len(column.Tasks), len(newTasks))
 		return fmt.Errorf("mismatch in tasks count for reorder request in column %s", columnID)
 	}
 
+	fmt.Printf("Updating column %s with new task order: %v\n", columnID, taskIDs)
 	board.Columns[targetColumnIndex].Tasks = newTasks
 
-	return p.writeBoard(board)
+	err = p.writeBoard(board)
+	if err != nil {
+		fmt.Printf("Error writing board: %v\n", err)
+		return err
+	}
+	
+	fmt.Printf("Successfully updated cards order in column %s\n", columnID)
+	return nil
 }
 
 func (p *Parser) extractBoardFromFrontMatter(content []byte, board *models.Board) error {
