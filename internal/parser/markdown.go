@@ -1,88 +1,154 @@
 package parser
 
 import (
+	"bytes"
+	"fmt"
+	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/yourusername/bangbang/internal/models"
+	"gopkg.in/yaml.v3"
 )
 
-// Parser handles reading and parsing markdown files
 type Parser struct {
-	rootDir string
+	boardFilePath string
 }
 
-// NewParser creates a new markdown parser instance
-func NewParser(rootDir string) *Parser {
+func NewParser(dir string) *Parser {
+	// Assume board.md is located in this directory
+	boardFile := filepath.Join(dir, "board.md")
 	return &Parser{
-		rootDir: rootDir,
+		boardFilePath: boardFile,
 	}
 }
 
-// ParseDirectory reads all markdown files in the directory and returns a Board
-func (p *Parser) ParseDirectory() (*models.Board, error) {
-	files, err := os.ReadDir(p.rootDir)
+func (p *Parser) ParseBoard() (*models.Board, error) {
+	content, err := os.ReadFile(p.boardFilePath)
 	if err != nil {
+		return nil, fmt.Errorf("failed to read board file: %w", err)
+	}
+
+	var board models.Board
+	if err := p.extractBoardFromFrontMatter(content, &board); err != nil {
 		return nil, err
 	}
 
-	columns := []models.Column{}
-	
-	for _, file := range files {
-		if !file.IsDir() && strings.HasSuffix(file.Name(), ".md") {
-			content, err := os.ReadFile(filepath.Join(p.rootDir, file.Name()))
-			if err != nil {
-				return nil, err
-			}
+	return &board, nil
+}
 
-			// Simple parsing for now - split by # for headers
-			parts := strings.Split(string(content), "#")
-			columnTitle := strings.TrimSuffix(file.Name(), ".md")
-			cards := []models.Card{}
+func (p *Parser) UpdateColumnsOrder(columnIDs []string) error {
+	board, err := p.ParseBoard()
+	if err != nil {
+		return err
+	}
 
-			for _, part := range parts[1:] { // Skip first empty part
-				lines := strings.Split(strings.TrimSpace(part), "\n")
-				if len(lines) > 0 {
-					cards = append(cards, models.Card{
-						Title:       strings.TrimSpace(lines[0]),
-						Description: strings.TrimSpace(strings.Join(lines[1:], "\n")),
-						Column:      columnTitle,
-					})
-				}
-			}
+	// Create a lookup for column positions
+	colMap := make(map[string]*models.Column)
+	for i := range board.Columns {
+		col := &board.Columns[i]
+		colMap[col.ID] = col
+	}
 
-			columns = append(columns, models.Column{
-				ID:    columnTitle,
-				Title: strings.Title(strings.ReplaceAll(columnTitle, "-", " ")),
-				Cards: cards,
-			})
+	// Create new ordered slice of columns
+	newCols := make([]models.Column, 0, len(columnIDs))
+	for _, cid := range columnIDs {
+		col, ok := colMap[cid]
+		if !ok {
+			return fmt.Errorf("column %s not found", cid)
+		}
+		newCols = append(newCols, *col)
+	}
+
+	// Only update if we have all columns
+	if len(newCols) != len(board.Columns) {
+		return fmt.Errorf("missing columns in reorder request")
+	}
+
+	board.Columns = newCols
+	return p.writeBoard(board)
+}
+
+func (p *Parser) UpdateCardsOrder(columnID string, taskIDs []string) error {
+	board, err := p.ParseBoard()
+	if err != nil {
+		return err
+	}
+
+	// Verify column exists
+	var found bool
+	for _, col := range board.Columns {
+		if col.ID == columnID {
+			found = true
+			break
 		}
 	}
+	if !found {
+		return fmt.Errorf("column %s not found", columnID)
+	}
 
-	return &models.Board{
-		Title:   "My Board",
-		Columns: columns,
-	}, nil
+	// Create a lookup for all tasks
+	taskMap := make(map[string]*models.Task)
+	for i := range board.Tasks {
+		t := &board.Tasks[i]
+		taskMap[t.ID] = t
+	}
+
+	// Update status for moved tasks
+	for _, tid := range taskIDs {
+		t, ok := taskMap[tid]
+		if !ok {
+			log.Printf("Warning: task %s not found during reorder", tid)
+			continue
+		}
+		t.Status = columnID
+	}
+
+	return p.writeBoard(board)
 }
 
-// ParseFile reads a single markdown file and returns a Card
-func (p *Parser) ParseFile(path string) (*models.Card, error) {
-	content, err := os.ReadFile(path)
+func (p *Parser) extractBoardFromFrontMatter(content []byte, board *models.Board) error {
+	lines := bytes.Split(content, []byte("\n"))
+	if len(lines) < 3 {
+		return fmt.Errorf("invalid board file: no frontmatter found")
+	}
+
+	if !bytes.Equal(bytes.TrimSpace(lines[0]), []byte("---")) {
+		return fmt.Errorf("frontmatter start not found")
+	}
+
+	// Find end of frontmatter
+	var end int
+	for i := 1; i < len(lines); i++ {
+		if bytes.Equal(bytes.TrimSpace(lines[i]), []byte("---")) {
+			end = i
+			break
+		}
+	}
+	if end == 0 {
+		return fmt.Errorf("frontmatter end not found")
+	}
+
+	// Extract and parse YAML content
+	yamlContent := bytes.Join(lines[1:end], []byte("\n"))
+	if err := yaml.Unmarshal(yamlContent, board); err != nil {
+		return fmt.Errorf("failed to parse board frontmatter: %w", err)
+	}
+	return nil
+}
+
+func (p *Parser) writeBoard(board *models.Board) error {
+	// Marshal board to YAML
+	fm, err := yaml.Marshal(board)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to marshal board: %w", err)
 	}
 
-	// Simple parsing for now
-	parts := strings.Split(string(content), "#")
-	if len(parts) < 2 {
-		return nil, nil
-	}
+	// Write with frontmatter delimiters
+	var buf bytes.Buffer
+	buf.WriteString("---\n")
+	buf.Write(fm)
+	buf.WriteString("---\n")
 
-	lines := strings.Split(strings.TrimSpace(parts[1]), "\n")
-	return &models.Card{
-		Title:       strings.TrimSpace(lines[0]),
-		Description: strings.TrimSpace(strings.Join(lines[1:], "\n")),
-		FilePath:    path,
-	}, nil
+	return os.WriteFile(p.boardFilePath, buf.Bytes(), 0644)
 }

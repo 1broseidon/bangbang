@@ -1,0 +1,121 @@
+/* Board layout */
+.board {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  min-height: 100vh;
+  background: #f5f6f7;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+/* Column styling */
+.column {
+  background: #f1f1f1;
+  border-radius: 8px;
+  min-width: 300px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.column h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+  font-size: 1.2rem;
+  cursor: grab;
+}
+
+/* Card list container */
+.card-list {
+  min-height: 200px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, padding 0.2s ease;
+}
+
+/* Highlight drop zones during drag */
+.card-list.sortable-receiving {
+  background: rgba(0, 0, 0, 0.02);
+  padding: 0.5rem;
+  outline: 2px dashed rgba(0, 0, 0, 0.1);
+  outline-offset: -2px;
+}
+
+/* Empty list styling */
+.card-list:empty {
+  background: rgba(0, 0, 0, 0.03);
+  border: 2px dashed rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+}
+
+.card-list:empty.sortable-receiving {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Card styling */
+.card {
+  background: white;
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin: 0;
+  user-select: none;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.card p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Sortable drag states */
+.sortable-ghost {
+  opacity: 0.4;
+  background: #f8f9fa;
+  box-shadow: none;
+  transform: scale(0.98);
+}
+
+.sortable-chosen {
+  background: #fff;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.sortable-drag {
+  transform: rotate(2deg) scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Reset default styles */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  box-sizing: border-box;
+}

@@ -1,42 +1,26 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>BangBang Board</title>
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        .board {
-            display: flex;
-            gap: 1rem;
-            padding: 1rem;
-        }
-        .column {
-            background: #f1f1f1;
-            border-radius: 4px;
-            min-width: 300px;
-            padding: 1rem;
-        }
-        .card {
-            background: white;
-            border-radius: 4px;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-        }
-    </style>
-</head>
-<body>
-    <div class="board">
-        {{range .Columns}}
-        <div class="column">
-            <h2>{{.Title}}</h2>
-            {{range .Cards}}
-            <div class="card">
-                <h3>{{.Title}}</h3>
-                <p>{{.Description}}</p>
-            </div>
-            {{end}}
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  </head>
+  <body>
+    <div class="board" id="board">
+      {{range .Columns}} {{$colID := .ID}}
+      <div class="column" data-column-id="{{.ID}}">
+        <h2>{{.Title}}</h2>
+        <div class="card-list" data-column-id="{{.ID}}">
+          {{range $.Tasks}} {{if eq .Status $colID}}
+          <div class="card" data-card-id="{{.ID}}">
+            <h3>{{.Title}}</h3>
+            <p>{{.Description}}</p>
+          </div>
+          {{end}} {{end}}
         </div>
-        {{end}}
+      </div>
+      {{end}}
     </div>
-</body>
+    <script src="/static/js/drag-and-drop.js"></script>
+  </body>
 </html>

@@ -6,40 +6,39 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"os"
 
+	"github.com/yourusername/bangbang/internal/api"
 	"github.com/yourusername/bangbang/internal/parser"
 )
 
 func main() {
-	dirPath := flag.String("dir", ".", "Directory path containing markdown files")
-	port := flag.String("port", "8080", "Port to run the server on")
+	dirPath := flag.String("dir", "./example", "Directory containing board.md")
 	flag.Parse()
 
-	if _, err := os.Stat(*dirPath); os.IsNotExist(err) {
-		log.Fatalf("Directory %s does not exist", *dirPath)
+	// Create parser instance
+	p := parser.NewParser(*dirPath)
+
+	// Create API handler
+	h := &api.Handler{
+		Parser: p,
 	}
 
-	p := parser.NewParser(*dirPath)
-	
+	// Register API endpoints
+	http.HandleFunc("/api/columns/order", h.UpdateColumnsOrder)
+	http.HandleFunc("/api/columns/", h.UpdateCardsOrder)
+
 	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	// Handle main page
+	// Handle board view
+	tmpl := template.Must(template.ParseFiles("templates/board.html"))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		board, err := p.ParseDirectory()
+		board, err := p.ParseBoard()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		tmpl, err := template.ParseFiles("templates/board.html")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		if err := tmpl.Execute(w, board); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -47,6 +46,6 @@ func main() {
 	})
 
 	fmt.Printf("Starting bangbang with directory: %s\n", *dirPath)
-	fmt.Printf("Server running at http://localhost:%s\n", *port)
-	log.Fatal(http.ListenAndServe(":"+*port, nil))
+	fmt.Println("Server running at http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
