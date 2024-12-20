@@ -13,30 +13,16 @@
     </header>
     <main class="container" x-data="{ 
       currentColumn: 0,
-      currentCard: 0,
       columnCount: {{len .Columns}},
       nextColumn() { 
         if (this.currentColumn < this.columnCount - 1) {
           this.currentColumn++;
-          this.currentCard = 0;
         }
       },
       prevColumn() {
         if (this.currentColumn > 0) {
           this.currentColumn--;
-          this.currentCard = 0;
         }
-      },
-      nextCard() {
-        const currentColumnCards = this.getColumnCards();
-        if (this.currentCard < currentColumnCards - 1) this.currentCard++;
-      },
-      prevCard() {
-        if (this.currentCard > 0) this.currentCard--;
-      },
-      getColumnCards() {
-        const column = document.querySelector(`.column[data-index='${this.currentColumn}']`);
-        return column ? column.querySelectorAll('.card').length : 0;
       }
     }">
       <!-- Mobile Navigation -->
