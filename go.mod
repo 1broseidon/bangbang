@@ -1,4 +1,4 @@
-module github.com/yourusername/bangbang
+module github.com/1broseidon/bangbang
 
 go 1.21
 

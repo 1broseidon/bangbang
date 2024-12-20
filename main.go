@@ -8,9 +8,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/1broseidon/bangbang/internal/api"
+	"github.com/1broseidon/bangbang/internal/parser"
 	"github.com/spf13/pflag"
-	"github.com/yourusername/bangbang/internal/api"
-	"github.com/yourusername/bangbang/internal/parser"
 )
 
 var (

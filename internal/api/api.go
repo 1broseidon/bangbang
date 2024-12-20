@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/yourusername/bangbang/internal/parser"
+	"github.com/1broseidon/bangbang/internal/parser"
 )
 
 // Handler holds references to dependencies required by HTTP handlers

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/yourusername/bangbang/internal/models"
+	"github.com/1broseidon/bangbang/internal/models"
 	"gopkg.in/yaml.v3"
 )
 
