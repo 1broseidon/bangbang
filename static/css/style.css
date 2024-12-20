@@ -269,12 +269,19 @@
     max-width: 100vw;
     height: calc(100vh - 120px);
     margin: 0;
-    padding: 1rem;
+    padding: 1.5rem;
     scroll-snap-align: center;
     scroll-snap-stop: always;
     overflow-y: auto;
     border-radius: 8px;
-    background: #f1f1f1;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .column h2 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
   }
 
   .card-list {
