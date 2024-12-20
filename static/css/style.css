@@ -198,17 +198,21 @@
     display: flex;
   }
 
-  .mobile-card-nav {
-    display: flex;
-  }
-
   .board {
     overflow: hidden;
+    flex-wrap: nowrap;
+    width: 100%;
   }
 
   .column {
     flex: 0 0 100%;
+    width: 100%;
+    min-width: 100%;
     margin-right: 0;
+  }
+
+  .column[x-show="false"] {
+    display: none !important;
   }
 
   .card-list {
