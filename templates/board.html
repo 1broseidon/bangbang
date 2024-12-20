@@ -40,10 +40,11 @@
         :class="{ 'editing': editing }"
       >
         <template x-if="!editing">## <span x-text="title"></span></template>
-        <input
-          x-show="editing"
-          type="text"
-          x-model="title"
+        <div x-show="editing" class="title-input-wrapper">
+          <span class="title-prefix">##&nbsp;</span>
+          <input
+            type="text"
+            x-model="title"
           @click.stop
           x-ref="titleInput"
           x-init="$watch('editing', value => value && $nextTick(() => $refs.titleInput.focus()))"
