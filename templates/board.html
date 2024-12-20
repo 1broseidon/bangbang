@@ -20,19 +20,42 @@
     <main
       class="container"
       x-data="{ 
-      currentColumn: 0,
-      columnCount: {{len .Columns}},
-      nextColumn() { 
-        if (this.currentColumn < this.columnCount - 1) {
-          this.currentColumn++;
+        currentColumn: 0,
+        columnCount: {{len .Columns}},
+        nextColumn() { 
+          if (this.currentColumn < this.columnCount - 1) {
+            this.currentColumn++;
+            this.scrollToColumn(this.currentColumn);
+          }
+        },
+        prevColumn() {
+          if (this.currentColumn > 0) {
+            this.currentColumn--;
+            this.scrollToColumn(this.currentColumn);
+          }
+        },
+        scrollToColumn(index) {
+          const board = document.getElementById('board');
+          const columns = board.querySelectorAll('.column');
+          if (columns[index]) {
+            columns[index].scrollIntoView({ behavior: 'smooth', inline: 'start' });
+          }
+        },
+        updateProgress() {
+          const board = document.getElementById('board');
+          const scrollPosition = board.scrollLeft;
+          const columnWidth = window.innerWidth;
+          const newColumn = Math.round(scrollPosition / columnWidth);
+          if (this.currentColumn !== newColumn) {
+            this.currentColumn = newColumn;
+          }
+        },
+        init() {
+          if (window.innerWidth <= 768) {
+            this.scrollToColumn(0);
+          }
         }
-      },
-      prevColumn() {
-        if (this.currentColumn > 0) {
-          this.currentColumn--;
-        }
-      }
-    }"
+      }"
     >
       <!-- Mobile Navigation -->
       <div class="mobile-nav" x-cloak>
@@ -47,7 +70,7 @@
           &rarr;
         </button>
       </div>
-      <div class="board" id="board">
+      <div class="board" id="board" @scroll.passive="updateProgress">
         {{range $index, $column := .Columns}}
         <div
           class="column"
@@ -68,6 +91,15 @@
           </div>
         </div>
         {{end}}
+      </div>
+      <!-- Mobile column progress indicators -->
+      <div class="column-dots" x-show="window.innerWidth <= 768">
+        <template x-for="(col, index) in {{len .Columns}}" :key="index">
+          <div 
+            class="column-dot" 
+            :class="{ 'active': currentColumn === index }"
+          ></div>
+        </template>
       </div>
     </main>
     <script src="/static/js/drag-and-drop.js"></script>
