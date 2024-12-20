@@ -4,31 +4,40 @@ columns:
     - id: todo
       title: To Do
       tasks:
-        - id: issue-1
-          title: Task 1
-          description: Priority task for the sprint
-        - id: issue-4
-          title: Feature Development
-          description: Implementing new API endpoints
+        - id: test-coverage
+          title: Add Test Coverage
+          description: Write unit tests for parser and API handlers
+        - id: error-handling
+          title: Improve Error Handling
+          description: Add better error messages and recovery mechanisms
+        - id: card-editing
+          title: Card Editing UI
+          description: Implement UI for editing card titles and descriptions
     - id: in-progress
       title: In Progress
       tasks:
-        - id: issue-3
-          title: Documentation
-          description: Writing technical specs
+        - id: documentation
+          title: Project Documentation
+          description: Writing README and API documentation
+        - id: mobile-responsive
+          title: Mobile Responsiveness
+          description: Improving mobile layout and touch interactions
     - id: review
       title: Review
       tasks:
-        - id: issue-6
-          title: UI Redesign
-          description: Finished homepage redesign
+        - id: pico-css
+          title: Pico CSS Integration
+          description: Refactored UI to use Pico CSS framework effectively
     - id: done
       title: Done
       tasks:
-        - id: issue-5
-          title: Database Migration
-          description: Completed schema updates
-        - id: issue-2
-          title: Bug Fix
-          description: Need to investigate performance issue
+        - id: drag-drop
+          title: Drag and Drop
+          description: Implemented column and card drag-and-drop functionality
+        - id: yaml-parser
+          title: YAML Parser
+          description: Created robust YAML frontmatter parser for board.md
+        - id: api-endpoints
+          title: REST API
+          description: Implemented endpoints for updating board state
 ---
