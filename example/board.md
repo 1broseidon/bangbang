@@ -18,10 +18,7 @@ columns:
           description: Write unit tests for parser and API handlers
     - id: in-progress
       title: In Progress
-      tasks:
-        - id: mobile-responsive
-          title: Mobile Responsiveness
-          description: Improving mobile layout and touch interactions
+      tasks: []
     - id: review
       title: Review
       tasks:
@@ -37,12 +34,15 @@ columns:
         - id: yaml-parser
           title: YAML Parser
           description: Created robust YAML frontmatter parser for board.md
+        - id: mobile-responsive
+          title: Mobile Responsiveness
+          description: Improving mobile layout and touch interactions
         - id: api-endpoints
           title: REST API
           description: Implemented endpoints for updating board state
         - id: mobile-dnd-fix
           title: Fix Mobile Drag and Drop
-          description: |
+          description: |-
             1. ~~Disable Sortable to verify interference~~
             2. ~~Implement touch-specific options~~
             3. ~~Add viewport-based initialization~~
