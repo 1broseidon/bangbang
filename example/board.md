@@ -29,7 +29,7 @@ columns:
       tasks:
         - id: pico-css
           title: Pico CSS Integration
-          description: Refactored UI to use Pico CSS framework effectively
+          description: Refactored UI to use Pico CSS framework effectively. yay!
     - id: done
       title: Done
       tasks:
