@@ -13,6 +13,7 @@
       defer
       src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
     ></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   </head>
   <body>
     <header class="header">
@@ -29,7 +30,7 @@
               {{range $cardIndex, $card := $column.Tasks}}
               <div class="card" data-card-id="{{$card.ID}}">
                 <h3>{{$card.Title}}</h3>
-                <p>{{$card.Description}}</p>
+                <div x-html="marked.parse(`{{$card.Description}}`)"></div>
               </div>
               {{end}}
             </div>
@@ -59,7 +60,7 @@
               {{range $cardIndex, $card := $column.Tasks}}
               <div class="mobile-card" data-card-id="{{$card.ID}}">
                 <h3>{{$card.Title}}</h3>
-                <p>{{$card.Description}}</p>
+                <div x-html="marked.parse(`{{$card.Description}}`)"></div>
               </div>
               {{end}}
             </div>
