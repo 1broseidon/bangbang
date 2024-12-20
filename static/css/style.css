@@ -1,6 +1,7 @@
 /* Override Pico's container width for our board */
 .container {
   max-width: 1400px !important;
+  margin-top: -2rem;
 }
 
 /* Custom header styling while keeping Pico's colors */
