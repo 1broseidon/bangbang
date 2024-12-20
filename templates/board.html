@@ -1,17 +1,25 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>BangBang Board</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <title>## {{.Title}}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css"
+    />
     <link rel="stylesheet" href="/static/css/style.css" />
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
   </head>
   <body>
     <header class="header">
-      <h1>{{.Title}}</h1>
+      <h1>## {{.Title}}</h1>
     </header>
-    <main class="container" x-data="{ 
+    <main
+      class="container"
+      x-data="{ 
       currentColumn: 0,
       columnCount: {{len .Columns}},
       nextColumn() { 
@@ -24,33 +32,42 @@
           this.currentColumn--;
         }
       }
-    }">
+    }"
+    >
       <!-- Mobile Navigation -->
       <div class="mobile-nav" x-cloak>
-        <button @click="prevColumn()" :disabled="currentColumn === 0">&larr;</button>
+        <button @click="prevColumn()" :disabled="currentColumn === 0">
+          &larr;
+        </button>
         <span x-text="`Column ${currentColumn + 1} of ${columnCount}`"></span>
-        <button @click="nextColumn()" :disabled="currentColumn === columnCount - 1">&rarr;</button>
+        <button
+          @click="nextColumn()"
+          :disabled="currentColumn === columnCount - 1"
+        >
+          &rarr;
+        </button>
       </div>
       <div class="board" id="board">
-      {{range $index, $column := .Columns}}
-      <div class="column" 
-           data-column-id="{{$column.ID}}"
-           data-index="{{$index}}"
-           x-show="window.innerWidth > 768 || currentColumn === {{$index}}"
-           x-transition:enter="slide-in"
-           x-transition:leave="slide-out">
-        <h2>{{$column.Title}}</h2>
-        <div class="card-list" data-column-id="{{$column.ID}}">
-          {{range $cardIndex, $card := $column.Tasks}}
-          <div class="card" 
-               data-card-id="{{$card.ID}}">
-            <h3>{{$card.Title}}</h3>
-            <p>{{$card.Description}}</p>
+        {{range $index, $column := .Columns}}
+        <div
+          class="column"
+          data-column-id="{{$column.ID}}"
+          data-index="{{$index}}"
+          x-show="window.innerWidth > 768 || currentColumn === {{$index}}"
+          x-transition:enter="slide-in"
+          x-transition:leave="slide-out"
+        >
+          <h2>{{$column.Title}}</h2>
+          <div class="card-list" data-column-id="{{$column.ID}}">
+            {{range $cardIndex, $card := $column.Tasks}}
+            <div class="card" data-card-id="{{$card.ID}}">
+              <h3>{{$card.Title}}</h3>
+              <p>{{$card.Description}}</p>
+            </div>
+            {{end}}
           </div>
-          {{end}}
         </div>
-      </div>
-      {{end}}
+        {{end}}
       </div>
     </main>
     <script src="/static/js/drag-and-drop.js"></script>
