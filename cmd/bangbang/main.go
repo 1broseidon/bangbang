@@ -13,7 +13,7 @@ import (
 
 func main() {
 	dirPath := pflag.StringP("dir", "d", ".", "Directory containing .bangbang.md")
-	port := pflag.IntP("port", "p", 8080, "Port to run the server on")
+	port := pflag.IntP("port", "p", 9000, "Port to run the server on")
 	debug := pflag.BoolP("debug", "D", false, "Enable debug logging")
 	pflag.Parse()
 
