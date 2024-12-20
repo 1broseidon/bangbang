@@ -88,7 +88,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   cursor: grab;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  margin: 0;
+  margin: 0 0 1rem 0;
   user-select: none;
 }
 
@@ -309,7 +309,7 @@
   }
 
   .card, .mobile-card {
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
     padding: 1.5rem;
     touch-action: pan-y pinch-zoom;
     background: white;
