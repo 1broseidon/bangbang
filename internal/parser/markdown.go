@@ -43,29 +43,25 @@ func (p *Parser) UpdateColumnsOrder(columnIDs []string) error {
 		return err
 	}
 
-	// Create a lookup for column positions
-	colMap := make(map[string]*models.Column)
-	for i := range board.Columns {
-		col := &board.Columns[i]
-		colMap[col.ID] = col
+	// Reorder the columns based on columnIDs
+	colMap := make(map[string]models.Column, len(board.Columns))
+	for _, c := range board.Columns {
+		colMap[c.ID] = c
 	}
 
-	// Create new ordered slice of columns
-	newCols := make([]models.Column, 0, len(columnIDs))
+	newColumns := make([]models.Column, 0, len(columnIDs))
 	for _, cid := range columnIDs {
 		col, ok := colMap[cid]
 		if !ok {
 			return fmt.Errorf("column %s not found", cid)
 		}
-		newCols = append(newCols, *col)
+		newColumns = append(newColumns, col)
 	}
 
-	// Only update if we have all columns
-	if len(newCols) != len(board.Columns) {
+	if len(newColumns) != len(board.Columns) {
 		return fmt.Errorf("missing columns in reorder request")
 	}
-
-	board.Columns = newCols
+	board.Columns = newColumns
 	return p.writeBoard(board)
 }
 
@@ -75,34 +71,42 @@ func (p *Parser) UpdateCardsOrder(columnID string, taskIDs []string) error {
 		return err
 	}
 
-	// Verify column exists
-	var found bool
-	for _, col := range board.Columns {
+	var targetColumnIndex = -1
+	for i, col := range board.Columns {
 		if col.ID == columnID {
-			found = true
+			targetColumnIndex = i
 			break
 		}
 	}
-	if !found {
+
+	if targetColumnIndex == -1 {
 		return fmt.Errorf("column %s not found", columnID)
 	}
 
-	// Create a lookup for all tasks
-	taskMap := make(map[string]*models.Task)
-	for i := range board.Tasks {
-		t := &board.Tasks[i]
+	// Reorder tasks inside the target column
+	column := board.Columns[targetColumnIndex]
+
+	// Create a map of tasks by ID in the column
+	taskMap := make(map[string]models.Task, len(column.Tasks))
+	for _, t := range column.Tasks {
 		taskMap[t.ID] = t
 	}
 
-	// Update status for moved tasks
+	newTasks := make([]models.Task, 0, len(taskIDs))
 	for _, tid := range taskIDs {
 		t, ok := taskMap[tid]
 		if !ok {
-			log.Printf("Warning: task %s not found during reorder", tid)
-			continue
+			return fmt.Errorf("task %s not found in column %s", tid, columnID)
 		}
-		t.Status = columnID
+		newTasks = append(newTasks, t)
 	}
+
+	// Check if we didn't miss any tasks
+	if len(newTasks) != len(column.Tasks) {
+		return fmt.Errorf("mismatch in tasks count for reorder request in column %s", columnID)
+	}
+
+	board.Columns[targetColumnIndex].Tasks = newTasks
 
 	return p.writeBoard(board)
 }
