@@ -29,11 +29,23 @@
       </div>
       <div class="board" id="board">
       {{range .Columns}}
+      {{range $index, $column := .Columns}}
       <div class="column" 
-           data-column-id="{{.ID}}"
+           data-column-id="{{$column.ID}}"
            x-show="window.innerWidth > 768 || currentColumn === {{$index}}"
            x-transition:enter="slide-in"
            x-transition:leave="slide-out">
+        <h2>{{$column.Title}}</h2>
+        <div class="card-list" data-column-id="{{$column.ID}}">
+          {{range $column.Tasks}}
+          <div class="card" data-card-id="{{.ID}}">
+            <h3>{{.Title}}</h3>
+            <p>{{.Description}}</p>
+          </div>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
         <h2>{{.Title}}</h2>
         <div class="card-list" data-column-id="{{.ID}}">
           {{range .Tasks}}
