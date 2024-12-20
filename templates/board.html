@@ -17,95 +17,63 @@
     <header class="header">
       <h1>## {{.Title}}</h1>
     </header>
-    <main
-      class="container"
-      x-data="{ 
-        currentColumn: 0,
-        columnCount: {{len .Columns}},
-        nextColumn() { 
-          if (this.currentColumn < this.columnCount - 1) {
-            this.currentColumn++;
-            this.scrollToColumn(this.currentColumn);
-          }
-        },
-        prevColumn() {
-          if (this.currentColumn > 0) {
-            this.currentColumn--;
-            this.scrollToColumn(this.currentColumn);
-          }
-        },
-        scrollToColumn(index) {
-          const board = document.getElementById('board');
-          if (!board) return;
-          const columns = board.querySelectorAll('.column');
-          if (columns[index]) {
-            columns[index].scrollIntoView({ behavior: 'smooth', inline: 'start' });
-          }
-        },
-        updateProgress() {
-          const board = document.getElementById('board');
-          if (!board) return;
-          const scrollPosition = board.scrollLeft;
-          const columnWidth = window.innerWidth;
-          const newColumn = Math.round(scrollPosition / columnWidth);
-          if (this.currentColumn !== newColumn && newColumn >= 0 && newColumn < this.columnCount) {
-            this.currentColumn = newColumn;
-          }
-        },
-        init() {
-          if (window.innerWidth <= 768) {
-            this.$nextTick(() => {
-              this.scrollToColumn(0);
-            });
-          }
-        }
-      }"
-    >
-      <!-- Mobile Navigation -->
-      <div class="mobile-nav" x-cloak>
-        <button @click="prevColumn()" :disabled="currentColumn === 0">
-          &larr;
-        </button>
-        <span x-text="`Column ${currentColumn + 1} of ${columnCount}`"></span>
-        <button
-          @click="nextColumn()"
-          :disabled="currentColumn === columnCount - 1"
-        >
-          &rarr;
-        </button>
-      </div>
-      <div class="board" id="board" @scroll.passive="updateProgress">
-        {{range $index, $column := .Columns}}
-        <div
-          class="column"
-          data-column-id="{{$column.ID}}"
-          data-index="{{$index}}"
-          x-show="window.innerWidth > 768 || currentColumn === {{$index}}"
-          x-transition:enter="slide-in"
-          x-transition:leave="slide-out"
-        >
-          <h2>{{$column.Title}}</h2>
-          <div class="card-list" data-column-id="{{$column.ID}}">
-            {{range $cardIndex, $card := $column.Tasks}}
-            <div class="card" data-card-id="{{$card.ID}}">
-              <h3>{{$card.Title}}</h3>
-              <p>{{$card.Description}}</p>
+    <main class="container">
+      <!-- Desktop View -->
+      <div class="desktop-view" x-data="desktopBoard" x-show="window.innerWidth > 768">
+        <div class="desktop-board" id="desktop-board">
+          {{range $index, $column := .Columns}}
+          <div class="column" data-column-id="{{$column.ID}}" data-index="{{$index}}">
+            <h2>{{$column.Title}}</h2>
+            <div class="desktop-card-list" data-column-id="{{$column.ID}}">
+              {{range $cardIndex, $card := $column.Tasks}}
+              <div class="card" data-card-id="{{$card.ID}}">
+                <h3>{{$card.Title}}</h3>
+                <p>{{$card.Description}}</p>
+              </div>
+              {{end}}
             </div>
-            {{end}}
           </div>
+          {{end}}
         </div>
-        {{end}}
       </div>
-      <!-- Mobile column progress indicators -->
-      <div class="column-dots" x-show="window.innerWidth <= 768">
-        <template x-for="(col, index) in {{len .Columns}}" :key="index">
+
+      <!-- Mobile View -->
+      <div class="mobile-view" x-data="mobileBoard" x-show="window.innerWidth <= 768" x-cloak>
+        <div class="mobile-nav">
+          <button @click="prevColumn()" :disabled="currentColumn === 0">&larr;</button>
+          <span x-text="`Column ${currentColumn + 1} of ${columnCount}`"></span>
+          <button @click="nextColumn()" :disabled="currentColumn === columnCount - 1">&rarr;</button>
+        </div>
+        
+        <div class="mobile-board">
+          {{range $index, $column := .Columns}}
           <div 
-            class="column-dot" 
-            :class="{ 'active': currentColumn === index }"
-          ></div>
-        </template>
+            class="mobile-column" 
+            data-column-id="{{$column.ID}}"
+            x-show="currentColumn === {{$index}}"
+            x-transition:enter="slide-in"
+            x-transition:leave="slide-out"
+          >
+            <h2>{{$column.Title}}</h2>
+            <div class="mobile-card-list" data-column-id="{{$column.ID}}">
+              {{range $cardIndex, $card := $column.Tasks}}
+              <div class="mobile-card" data-card-id="{{$card.ID}}">
+                <h3>{{$card.Title}}</h3>
+                <p>{{$card.Description}}</p>
+              </div>
+              {{end}}
+            </div>
+          </div>
+          {{end}}
+        </div>
+
+        <div class="column-dots">
+          <template x-for="(col, index) in columnCount" :key="index">
+            <div class="column-dot" :class="{ 'active': currentColumn === index }"></div>
+          </template>
+        </div>
       </div>
     </main>
-    <script src="/static/js/drag-and-drop.js"></script>
+    <script src="/static/js/board-components.js"></script>
   </body>
 </html>

@@ -192,8 +192,34 @@
   to { opacity: 0; transform: translateY(-20px); }
 }
 
-/* Mobile styles */
+/* Desktop View */
+.desktop-view {
+  width: 100%;
+}
+
+.desktop-board {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+  align-items: flex-start;
+  min-height: 80vh;
+  padding: 1rem;
+}
+
+/* Mobile View */
+.mobile-view {
+  width: 100%;
+}
+
+.mobile-board {
+  height: calc(100vh - 120px);
+  overflow-y: hidden;
+}
+
 @media (max-width: 768px) {
+  .desktop-view {
+    display: none;
+  }
   /* Full-screen mobile layout */
   body {
     overflow-x: hidden;
