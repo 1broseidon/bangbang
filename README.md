@@ -1,7 +1,7 @@
 # 💥 BangBang
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/yourusername/bangbang)](https://goreportcard.com/report/github.com/yourusername/bangbang)
-[![Go Reference](https://pkg.go.dev/badge/github.com/yourusername/bangbang.svg)](https://pkg.go.dev/github.com/yourusername/bangbang)
+[![Go Report Card](https://goreportcard.com/badge/github.com/1broseidon/bangbang)](https://goreportcard.com/report/github.com/1broseidon/bangbang)
+[![Go Reference](https://pkg.go.dev/badge/github.com/1broseidon/bangbang.svg)](https://pkg.go.dev/github.com/1broseidon/bangbang)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 BangBang is a lightweight, portable Kanban board that lives in your project directory. It uses a single markdown file (`.bangbang.md`) to store your board's data, making it perfect for version control and easy sharing with your team.
@@ -20,7 +20,7 @@ BangBang is a lightweight, portable Kanban board that lives in your project dire
 
 ```bash
 # Install bangbang
-go install github.com/yourusername/bangbang/cmd/bangbang@latest
+go install github.com/1broseidon/bangbang/cmd/bangbang@latest
 
 # Run in any directory
 bangbang
@@ -42,7 +42,7 @@ The board data is stored in `.bangbang.md` in your current directory. This file 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/bangbang.git
+git clone https://github.com/1broseidon/bangbang.git
 
 # Install dependencies
 go mod download
