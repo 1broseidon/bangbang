@@ -122,12 +122,10 @@
 }
 
 .edit-button {
-  padding: 0 !important;
-  width: 24px !important;
-  height: 24px !important;
+  padding: 4px !important;
+  width: 32px !important;
+  height: 32px !important;
   min-width: unset !important;
-  font-size: 14px !important;
-  line-height: 1 !important;
   border-radius: 4px !important;
   display: flex !important;
   align-items: center;
@@ -135,10 +133,19 @@
   margin: 0 !important;
   opacity: 0.6;
   transition: opacity 0.2s ease;
+  background: transparent !important;
+  border: none !important;
 }
 
 .edit-button:hover {
   opacity: 1;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+.edit-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
 .card:hover {

@@ -32,7 +32,7 @@
                 <div class="card-header">
                   <h3>{{$card.Title}}</h3>
                   <button class="edit-button outline secondary icon-only" @click="$dispatch('open-edit-modal', { columnId: '{{$column.ID}}', cardId: '{{$card.ID}}', title: '{{$card.Title}}', description: `{{$card.Description}}` })" aria-label="Edit card">
-                    ✎
+                    <img src="/static/img/edit-icon.svg" alt="Edit" class="edit-icon">
                   </button>
                 </div>
                 <div x-html="marked.parse(`{{$card.Description}}`)"></div>
