@@ -16,12 +16,30 @@ type Parser struct {
 }
 
 func NewParser(dir string, debug bool) *Parser {
-	// Assume board.md is located in this directory
-	boardFile := filepath.Join(dir, "board.md")
-	return &Parser{
+	// Use .bangbang.md in the specified directory
+	boardFile := filepath.Join(dir, ".bangbang.md")
+	p := &Parser{
 		boardFilePath: boardFile,
 		debug:         debug,
 	}
+
+	// Create file if it doesn't exist
+	if _, err := os.Stat(boardFile); os.IsNotExist(err) {
+		defaultBoard := &models.Board{
+			Title: "My Board",
+			Columns: []models.Column{
+				{ID: "todo", Title: "To Do", Tasks: []models.Task{}},
+				{ID: "in-progress", Title: "In Progress", Tasks: []models.Task{}},
+				{ID: "review", Title: "Review", Tasks: []models.Task{}},
+				{ID: "done", Title: "Done", Tasks: []models.Task{}},
+			},
+		}
+		if err := p.writeBoard(defaultBoard); err != nil && p.debug {
+			fmt.Printf("Error creating default board: %v\n", err)
+		}
+	}
+
+	return p
 }
 
 func (p *Parser) ParseBoard() (*models.Board, error) {
