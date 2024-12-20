@@ -19,6 +19,9 @@ columns:
     - id: in-progress
       title: In Progress
       tasks:
+        - id: mobile-responsive
+          title: Mobile Responsiveness
+          description: Improving mobile layout and touch interactions
         - id: mobile-dnd-fix
           title: Fix Mobile Drag and Drop
           description: |
@@ -27,9 +30,6 @@ columns:
             3. Add viewport-based initialization
             4. Test column transitions
             5. Re-enable drag with safeguards
-        - id: mobile-responsive
-          title: Mobile Responsiveness
-          description: Improving mobile layout and touch interactions
     - id: review
       title: Review
       tasks:
