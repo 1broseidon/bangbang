@@ -5,15 +5,35 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
     <link rel="stylesheet" href="/static/css/style.css" />
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   </head>
   <body>
     <header class="header">
       <h1>{{.Title}}</h1>
     </header>
-    <main class="container">
+    <main class="container" x-data="{ 
+      currentColumn: 0,
+      columnCount: {{len .Columns}},
+      nextColumn() { 
+        if (this.currentColumn < this.columnCount - 1) this.currentColumn++
+      },
+      prevColumn() {
+        if (this.currentColumn > 0) this.currentColumn--
+      }
+    }">
+      <!-- Mobile Navigation -->
+      <div class="mobile-nav" x-cloak>
+        <button @click="prevColumn()" :disabled="currentColumn === 0">&larr;</button>
+        <span x-text="`Column ${currentColumn + 1} of ${columnCount}`"></span>
+        <button @click="nextColumn()" :disabled="currentColumn === columnCount - 1">&rarr;</button>
+      </div>
       <div class="board" id="board">
       {{range .Columns}}
-      <div class="column" data-column-id="{{.ID}}">
+      <div class="column" 
+           data-column-id="{{.ID}}"
+           x-show="window.innerWidth > 768 || currentColumn === {{$index}}"
+           x-transition:enter="slide-in"
+           x-transition:leave="slide-out">
         <h2>{{.Title}}</h2>
         <div class="card-list" data-column-id="{{.ID}}">
           {{range .Tasks}}

@@ -133,12 +133,57 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
-/* Reset default styles */
-/* body {
-  margin: 0;
-  padding: 0;
-} */
+/* Alpine.js utilities */
+[x-cloak] {
+  display: none !important;
+}
 
-/* * {
-  box-sizing: border-box;
-} */
+/* Mobile navigation */
+.mobile-nav {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--card-background-color);
+  border-radius: var(--border-radius);
+}
+
+.mobile-nav button {
+  margin: 0;
+}
+
+/* Transitions */
+.slide-in {
+  animation: slideIn 0.2s ease-out;
+}
+
+.slide-out {
+  animation: slideOut 0.2s ease-in;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-100%); }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .mobile-nav {
+    display: flex;
+  }
+
+  .board {
+    overflow: hidden;
+  }
+
+  .column {
+    flex: 0 0 100%;
+    margin-right: 0;
+  }
+}
