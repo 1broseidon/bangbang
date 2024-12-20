@@ -240,6 +240,53 @@ document.addEventListener('alpine:init', () => {
       });
     }
   }));
+
+  // New task modal component
+  Alpine.data('newTaskModal', () => ({
+    form: {
+      title: '',
+      description: '',
+      columnId: ''
+    },
+
+    init() {
+      window.addEventListener('open-new-task-modal', (event) => {
+        const { columnId } = event.detail;
+        this.form.columnId = columnId;
+        this.form.title = '';
+        this.form.description = '';
+        document.getElementById('new-task-modal').showModal();
+      });
+    },
+
+    closeModal() {
+      document.getElementById('new-task-modal').close();
+    },
+
+    async saveTask() {
+      try {
+        const response = await fetch(`/api/columns/${this.form.columnId}/cards`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: this.form.title,
+            description: this.form.description
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to create task: ${response.statusText}`);
+        }
+
+        this.closeModal();
+        window.location.reload();
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+  }));
 });
 
 // Helper functions

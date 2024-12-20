@@ -27,6 +27,7 @@
           <div class="column" data-column-id="{{$column.ID}}" data-index="{{$index}}">
             <h2>{{$column.Title}}</h2>
             <div class="desktop-card-list" data-column-id="{{$column.ID}}">
+              <button class="add-task-button" @click="$dispatch('open-new-task-modal', { columnId: '{{$column.ID}}' })" aria-label="Add new task">+</button>
               {{range $cardIndex, $card := $column.Tasks}}
               <div class="card" data-card-id="{{$card.ID}}">
                 <div class="card-header">
@@ -88,6 +89,31 @@
 
       </div>
     </main>
+
+    <!-- New Task Modal -->
+    <dialog id="new-task-modal" x-data="newTaskModal">
+      <article>
+        <header>
+          <h3>New Task</h3>
+        </header>
+        <form @submit.prevent="saveTask">
+          <label for="task-title">
+            Title
+            <input type="text" id="task-title" x-model="form.title" required>
+          </label>
+          
+          <label for="task-description">
+            Description
+            <textarea id="task-description" x-model="form.description" rows="4"></textarea>
+          </label>
+          
+          <footer class="grid">
+            <button type="button" class="secondary" @click="closeModal">Cancel</button>
+            <button type="submit">Create</button>
+          </footer>
+        </form>
+      </article>
+    </dialog>
 
     <!-- Card Edit Modal -->
     <dialog id="edit-modal" x-data="cardEditModal">

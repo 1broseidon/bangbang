@@ -35,6 +35,12 @@ type UpdateCardRequest struct {
 	Description string `json:"description"`
 }
 
+// CreateCardRequest defines expected JSON for creating a new card
+type CreateCardRequest struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
 // UpdateColumnsOrder handles PUT /api/columns/order
 func (h *Handler) UpdateColumnsOrder(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
@@ -71,6 +77,9 @@ func (h *Handler) ColumnsHandler(w http.ResponseWriter, r *http.Request) {
 	// PUT /api/columns/{columnID}/cards/order -> update cards order
 	// PUT /api/columns/{columnID}/cards/{cardID} -> update card details
 
+	// PUT /api/columns/{columnID}/cards -> create new card
+	// PUT /api/columns/{columnID}/cards/{cardID} -> update card details
+	// PUT /api/columns/{columnID}/cards/order -> update cards order
 	switch len(parts) {
 	case 1:
 		// Expect: PUT /api/columns/{columnID}
@@ -89,6 +98,22 @@ func (h *Handler) ColumnsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
+	case 2:
+		// Expect: PUT /api/columns/{columnID}/cards
+		if parts[1] != "cards" {
+			http.Error(w, "invalid path segment", http.StatusBadRequest)
+			return
+		}
+		var req CreateCardRequest
+		if err := parseJSONBody(r, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := h.Parser.CreateCard(columnID, req.Title, req.Description); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
 	case 3:
 		// Expect: PUT /api/columns/{columnID}/cards/{cardID}
 		// or PUT /api/columns/{columnID}/cards/order
