@@ -369,8 +369,4 @@
   .column-dot.active {
     opacity: 1;
   }
-
-  .mobile-nav {
-    display: flex;
-  }
 }
