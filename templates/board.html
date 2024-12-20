@@ -67,11 +67,6 @@
           {{end}}
         </div>
 
-        <div class="column-dots">
-          <template x-for="(col, index) in columnCount" :key="index">
-            <div class="column-dot" :class="{ 'active': currentColumn === index }"></div>
-          </template>
-        </div>
       </div>
     </main>
     <script src="/static/js/board-components.js"></script>

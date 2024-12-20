@@ -335,38 +335,4 @@
     transition: transform 0.3s ease-out;
   }
 
-  /* Progress indicator */
-  .column-progress {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--primary-focus);
-    z-index: 1000;
-  }
-
-  .column-dots {
-    position: fixed;
-    bottom: 1rem;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    z-index: 1000;
-  }
-
-  .column-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--primary);
-    opacity: 0.3;
-    transition: opacity 0.3s ease;
-  }
-
-  .column-dot.active {
-    opacity: 1;
-  }
 }
