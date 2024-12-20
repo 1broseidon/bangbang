@@ -292,6 +292,29 @@
   pointer-events: auto;
 }
 
+/* Column indicator styling */
+.column-indicator {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 100;
+}
+
+.indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+}
+
+.indicator-dot.active {
+  background: var(--primary);
+}
+
 @media (max-width: 768px) {
   .desktop-view {
     display: none;

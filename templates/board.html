@@ -43,6 +43,14 @@
       <div class="mobile-view" x-data="mobileBoard" x-show="window.innerWidth <= 768" x-cloak>
         
         <div class="mobile-board">
+          <div class="column-indicator">
+            {{range $index, $column := .Columns}}
+            <div 
+              class="indicator-dot"
+              :class="{ 'active': currentColumn === {{$index}} }"
+            ></div>
+            {{end}}
+          </div>
           {{range $index, $column := .Columns}}
           <div 
             class="mobile-column" 
