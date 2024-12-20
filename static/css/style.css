@@ -12,14 +12,14 @@
 
 .header h1 {
   margin: 0;
-  padding: 3rem;
+  padding: 1rem;
   font-size: 2.5rem;
   color: var(--primary-inverse);
 }
 
 @media (max-width: 768px) {
   .header h1 {
-    padding: 1rem;
+    padding: 0.5rem;
     font-size: 1.8rem;
     text-align: left;
   }
