@@ -13,12 +13,30 @@
     </header>
     <main class="container" x-data="{ 
       currentColumn: 0,
+      currentCard: 0,
       columnCount: {{len .Columns}},
       nextColumn() { 
-        if (this.currentColumn < this.columnCount - 1) this.currentColumn++
+        if (this.currentColumn < this.columnCount - 1) {
+          this.currentColumn++;
+          this.currentCard = 0;
+        }
       },
       prevColumn() {
-        if (this.currentColumn > 0) this.currentColumn--
+        if (this.currentColumn > 0) {
+          this.currentColumn--;
+          this.currentCard = 0;
+        }
+      },
+      nextCard() {
+        const currentColumnCards = this.getColumnCards();
+        if (this.currentCard < currentColumnCards - 1) this.currentCard++;
+      },
+      prevCard() {
+        if (this.currentCard > 0) this.currentCard--;
+      },
+      getColumnCards() {
+        const column = document.querySelector(`.column[data-index='${this.currentColumn}']`);
+        return column ? column.querySelectorAll('.card').length : 0;
       }
     }">
       <!-- Mobile Navigation -->
@@ -31,17 +49,30 @@
       {{range $index, $column := .Columns}}
       <div class="column" 
            data-column-id="{{$column.ID}}"
+           data-index="{{$index}}"
            x-show="window.innerWidth > 768 || currentColumn === {{$index}}"
            x-transition:enter="slide-in"
            x-transition:leave="slide-out">
         <h2>{{$column.Title}}</h2>
         <div class="card-list" data-column-id="{{$column.ID}}">
-          {{range $column.Tasks}}
-          <div class="card" data-card-id="{{.ID}}">
-            <h3>{{.Title}}</h3>
-            <p>{{.Description}}</p>
+          {{range $cardIndex, $card := $column.Tasks}}
+          <div class="card" 
+               data-card-id="{{$card.ID}}"
+               x-show="window.innerWidth > 768 || currentCard === {{$cardIndex}}"
+               x-transition:enter="fade-in"
+               x-transition:leave="fade-out">
+            <h3>{{$card.Title}}</h3>
+            <p>{{$card.Description}}</p>
           </div>
           {{end}}
+        </div>
+        <!-- Mobile Card Navigation -->
+        <div class="mobile-card-nav" x-cloak>
+          <button @click="prevCard()" 
+                  :disabled="currentCard === 0">&uarr;</button>
+          <span x-text="`Card ${currentCard + 1} of ${getColumnCards()}`"></span>
+          <button @click="nextCard()" 
+                  :disabled="currentCard === getColumnCards() - 1">&darr;</button>
         </div>
       </div>
       {{end}}
