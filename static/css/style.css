@@ -92,7 +92,11 @@
 .card ul,
 .card ol,
 .mobile-card ul,
-.mobile-card ol {
+.mobile-card ol,
+.card ul li,
+.card ol li,
+.mobile-card ul li,
+.mobile-card ol li {
   color: inherit;
 }
 
