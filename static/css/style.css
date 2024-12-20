@@ -88,6 +88,14 @@
   border-color: rgba(0, 0, 0, 0.2);
 }
 
+/* Markdown content styling */
+.card ul,
+.card ol,
+.mobile-card ul,
+.mobile-card ol {
+  color: inherit;
+}
+
 /* Card styling */
 .card {
   background: white;
