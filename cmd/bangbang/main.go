@@ -26,6 +26,7 @@ func main() {
 	}
 
 	// Register API endpoints
+	http.HandleFunc("/api/board/title", h.UpdateBoardTitle)
 	http.HandleFunc("/api/columns/order", h.UpdateColumnsOrder)
 	http.HandleFunc("/api/columns/", h.ColumnsHandler)
 

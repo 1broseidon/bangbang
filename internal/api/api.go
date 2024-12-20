@@ -41,7 +41,31 @@ type CreateCardRequest struct {
 	Description string `json:"description"`
 }
 
+type UpdateBoardTitleRequest struct {
+	Title string `json:"title"`
+}
+
 // UpdateColumnsOrder handles PUT /api/columns/order
+func (h *Handler) UpdateBoardTitle(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req UpdateBoardTitleRequest
+	if err := parseJSONBody(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.Parser.UpdateBoardTitle(req.Title); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *Handler) UpdateColumnsOrder(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

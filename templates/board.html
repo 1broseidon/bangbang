@@ -11,7 +11,44 @@
   </head>
   <body>
     <header class="header">
-      <h1>## {{.Title}}</h1>
+      <h1 
+        x-data="{ 
+          editing: false, 
+          title: '{{.Title}}',
+          originalTitle: '{{.Title}}',
+          async save() {
+            try {
+              const response = await fetch('/api/board/title', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: this.title })
+              });
+              if (!response.ok) throw new Error('Failed to update title');
+              this.originalTitle = this.title;
+              this.editing = false;
+            } catch (error) {
+              console.error(error);
+              this.title = this.originalTitle;
+              this.editing = false;
+            }
+          }
+        }"
+        @click="editing = true"
+        @keydown.enter="save()"
+        @keydown.escape="editing = false; title = originalTitle"
+        @blur="editing = false; title = originalTitle"
+        :class="{ 'editing': editing }"
+      >
+        <template x-if="!editing">## <span x-text="title"></span></template>
+        <input
+          x-show="editing"
+          type="text"
+          x-model="title"
+          @click.stop
+          x-ref="titleInput"
+          x-init="$watch('editing', value => value && $nextTick(() => $refs.titleInput.focus()))"
+        >
+      </h1>
     </header>
     <main class="container">
       <!-- Desktop View -->

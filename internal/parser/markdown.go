@@ -343,6 +343,16 @@ func (p *Parser) CreateCard(columnID string, title string, description string) e
 	return p.writeBoard(board)
 }
 
+func (p *Parser) UpdateBoardTitle(newTitle string) error {
+	board, err := p.ParseBoard()
+	if err != nil {
+		return err
+	}
+
+	board.Title = newTitle
+	return p.writeBoard(board)
+}
+
 func (p *Parser) writeBoard(board *models.Board) error {
 	// Marshal board to YAML
 	fm, err := yaml.Marshal(board)
