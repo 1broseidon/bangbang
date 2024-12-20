@@ -17,6 +17,38 @@
   color: var(--h1-color);
   cursor: text;
   position: relative;
+  transition: transform 0.2s ease;
+}
+
+@keyframes titlePulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.header h1:hover {
+  animation: titlePulse 1s ease-in-out infinite;
+}
+
+.header h1:hover::after {
+  content: "Click to edit";
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  color: var(--primary);
+  opacity: 0.7;
+  white-space: nowrap;
 }
 
 .header h1.editing span {
