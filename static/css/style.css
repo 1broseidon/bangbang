@@ -33,7 +33,7 @@
 }
 
 .header h1:hover {
-  animation: titlePulse 1s ease-in-out infinite;
+  animation: titlePulse 1s ease-in-out forwards;
 }
 
 .header h1:hover::after {
