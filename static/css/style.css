@@ -417,8 +417,12 @@
   }
 
   .card p,
-  .mobile-card p {
-    color: #666;
+  .mobile-card p,
+  .card ul,
+  .mobile-card ul,
+  .card ol,
+  .mobile-card ol {
+    color: var(--color);
     margin: 0;
     font-size: 0.9rem;
     line-height: 1.4;
