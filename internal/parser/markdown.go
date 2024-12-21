@@ -10,6 +10,103 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Domain types for card operations
+type CardMove struct {
+	SourceColumnID string
+	TargetColumnID string
+	Cards          []models.Task
+}
+
+type ColumnOperation struct {
+	Column *models.Column
+	Index  int
+}
+
+// Custom error types
+type ErrColumnNotFound struct {
+	ColumnID string
+}
+
+func (e ErrColumnNotFound) Error() string {
+	return fmt.Sprintf("column %s not found", e.ColumnID)
+}
+
+type ErrCardNotFound struct {
+	CardID string
+}
+
+func (e ErrCardNotFound) Error() string {
+	return fmt.Sprintf("card %s not found", e.CardID)
+}
+
+// Helper functions for card operations
+func (p *Parser) findColumn(board *models.Board, columnID string) (*ColumnOperation, error) {
+	for i, col := range board.Columns {
+		if col.ID == columnID {
+			return &ColumnOperation{
+				Column: &board.Columns[i],
+				Index:  i,
+			}, nil
+		}
+	}
+	return nil, &ErrColumnNotFound{ColumnID: columnID}
+}
+
+func (p *Parser) validateAndCollectCards(board *models.Board, taskIDs []string) ([]models.Task, error) {
+	// Create a map of all tasks for efficient lookup
+	allTasks := make(map[string]models.Task)
+	for _, col := range board.Columns {
+		for _, t := range col.Tasks {
+			allTasks[t.ID] = t
+		}
+	}
+
+	// Validate and collect cards
+	cards := make([]models.Task, 0, len(taskIDs))
+	for _, tid := range taskIDs {
+		task, ok := allTasks[tid]
+		if !ok {
+			return nil, &ErrCardNotFound{CardID: tid}
+		}
+		cards = append(cards, task)
+	}
+
+	return cards, nil
+}
+
+func (p *Parser) moveCards(board *models.Board, targetCol *ColumnOperation, cards []models.Task) error {
+	if p.debug {
+		fmt.Printf("Moving cards to column %s\n", targetCol.Column.ID)
+	}
+
+	// Update target column with new cards
+	targetCol.Column.Tasks = cards
+
+	// Remove moved cards from other columns
+	for i := range board.Columns {
+		if i == targetCol.Index {
+			continue
+		}
+
+		remainingTasks := make([]models.Task, 0)
+		for _, t := range board.Columns[i].Tasks {
+			found := false
+			for _, movedTask := range cards {
+				if t.ID == movedTask.ID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				remainingTasks = append(remainingTasks, t)
+			}
+		}
+		board.Columns[i].Tasks = remainingTasks
+	}
+
+	return nil
+}
+
 type Parser struct {
 	boardFilePath string
 	debug         bool
@@ -91,83 +188,25 @@ func (p *Parser) UpdateCardsOrder(columnID string, taskIDs []string) error {
 
 	board, err := p.ParseBoard()
 	if err != nil {
-		if p.debug {
-			fmt.Printf("Error parsing board: %v\n", err)
-		}
-		return err
+		return fmt.Errorf("parsing board: %w", err)
 	}
 
-	// Find target column
-	var targetColumnIndex = -1
-	for i, col := range board.Columns {
-		if col.ID == columnID {
-			targetColumnIndex = i
-			break
-		}
-	}
-
-	if targetColumnIndex == -1 {
-		if p.debug {
-			fmt.Printf("Error: Column %s not found\n", columnID)
-		}
-		return fmt.Errorf("column %s not found", columnID)
-	}
-
-	if p.debug {
-		fmt.Printf("Found target column at index: %d\n", targetColumnIndex)
-	}
-
-	// Create a map of all tasks across all columns
-	allTasks := make(map[string]models.Task)
-	for _, col := range board.Columns {
-		for _, t := range col.Tasks {
-			allTasks[t.ID] = t
-		}
-	}
-
-	// Build new task list for target column
-	newTasks := make([]models.Task, 0, len(taskIDs))
-	for _, tid := range taskIDs {
-		t, ok := allTasks[tid]
-		if !ok {
-			return fmt.Errorf("task %s not found", tid)
-		}
-		newTasks = append(newTasks, t)
-	}
-
-	// Remove tasks that moved to target column from other columns
-	for i := range board.Columns {
-		if i == targetColumnIndex {
-			continue
-		}
-		remainingTasks := make([]models.Task, 0)
-		for _, t := range board.Columns[i].Tasks {
-			found := false
-			for _, tid := range taskIDs {
-				if t.ID == tid {
-					found = true
-					break
-				}
-			}
-			if !found {
-				remainingTasks = append(remainingTasks, t)
-			}
-		}
-		board.Columns[i].Tasks = remainingTasks
-	}
-
-	// Update target column with new task order
-	if p.debug {
-		fmt.Printf("Updating column %s with new task order: %v\n", columnID, taskIDs)
-	}
-	board.Columns[targetColumnIndex].Tasks = newTasks
-
-	err = p.writeBoard(board)
+	targetCol, err := p.findColumn(board, columnID)
 	if err != nil {
-		if p.debug {
-			fmt.Printf("Error writing board: %v\n", err)
-		}
-		return err
+		return fmt.Errorf("finding target column: %w", err)
+	}
+
+	cards, err := p.validateAndCollectCards(board, taskIDs)
+	if err != nil {
+		return fmt.Errorf("validating cards: %w", err)
+	}
+
+	if err := p.moveCards(board, targetCol, cards); err != nil {
+		return fmt.Errorf("moving cards: %w", err)
+	}
+
+	if err := p.writeBoard(board); err != nil {
+		return fmt.Errorf("writing board: %w", err)
 	}
 
 	if p.debug {

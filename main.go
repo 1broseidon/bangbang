@@ -10,6 +10,7 @@ import (
 
 	"github.com/1broseidon/bangbang/internal/api"
 	"github.com/1broseidon/bangbang/internal/parser"
+	"github.com/go-chi/chi/v5"
 	"github.com/spf13/pflag"
 )
 
@@ -38,10 +39,11 @@ func main() {
 		Parser: p,
 	}
 
-	// Register API endpoints
-	http.HandleFunc("/api/board/title", h.UpdateBoardTitle)
-	http.HandleFunc("/api/columns/order", h.UpdateColumnsOrder)
-	http.HandleFunc("/api/columns/", h.ColumnsHandler)
+	// Create main router
+	r := chi.NewRouter()
+
+	// Mount API routes under /api
+	r.Mount("/api", h.Routes())
 
 	// Serve static files from embedded filesystem
 	staticSubFS, err := fs.Sub(staticFS, "static")
@@ -49,11 +51,11 @@ func main() {
 		log.Fatal(err)
 	}
 	fs := http.FileServer(http.FS(staticSubFS))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	r.Handle("/static/*", http.StripPrefix("/static/", fs))
 
 	// Handle board view using embedded template
 	tmpl := template.Must(template.ParseFS(templateFS, "templates/board.html"))
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		board, err := p.ParseBoard()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -68,5 +70,5 @@ func main() {
 	fmt.Printf("Starting bangbang %s (%s)\n", version, date)
 	fmt.Printf("Directory: %s\n", *dirPath)
 	fmt.Printf("Server running at http://localhost:%d\n", *port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), r))
 }

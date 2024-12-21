@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/1broseidon/bangbang/internal/parser"
+	"github.com/go-chi/chi/v5"
 )
 
 // Handler holds references to dependencies required by HTTP handlers
@@ -45,13 +45,8 @@ type UpdateBoardTitleRequest struct {
 	Title string `json:"title"`
 }
 
-// UpdateColumnsOrder handles PUT /api/columns/order
+// UpdateBoardTitle handles PUT /board/title
 func (h *Handler) UpdateBoardTitle(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var req UpdateBoardTitleRequest
 	if err := parseJSONBody(r, &req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -66,15 +61,11 @@ func (h *Handler) UpdateBoardTitle(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateColumnsOrder handles PUT /columns/order
 func (h *Handler) UpdateColumnsOrder(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var req ColumnOrderRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+	if err := parseJSONBody(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -86,98 +77,93 @@ func (h *Handler) UpdateColumnsOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// ColumnsHandler routes requests for all column-related endpoints except /columns/order
-func (h *Handler) ColumnsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+// Routes sets up all API routes using chi router
+func (h *Handler) Routes() chi.Router {
+	r := chi.NewRouter()
+
+	// Board routes
+	r.Put("/board/title", h.UpdateBoardTitle)
+
+	// Column routes
+	r.Put("/columns/order", h.UpdateColumnsOrder)
+	r.Put("/columns/{columnID}", h.UpdateColumnTitle)
+
+	// Card routes
+	r.Put("/columns/{columnID}/cards", h.CreateCard)
+	r.Put("/columns/{columnID}/cards/order", h.UpdateCardsOrder)
+	r.Put("/columns/{columnID}/cards/{cardID}", h.UpdateCardDetails)
+
+	return r
+}
+
+// UpdateColumnTitle handles PUT /columns/{columnID}
+func (h *Handler) UpdateColumnTitle(w http.ResponseWriter, r *http.Request) {
+	columnID := chi.URLParam(r, "columnID")
+	var req UpdateColumnRequest
+	if err := parseJSONBody(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	path := strings.TrimPrefix(r.URL.Path, "/api/columns/")
-	parts := strings.Split(path, "/")
-
-	// Possible routes:
-	// PUT /api/columns/{columnID} -> update column title
-	// PUT /api/columns/{columnID}/cards/order -> update cards order
-	// PUT /api/columns/{columnID}/cards/{cardID} -> update card details
-
-	// PUT /api/columns/{columnID}/cards -> create new card
-	// PUT /api/columns/{columnID}/cards/{cardID} -> update card details
-	// PUT /api/columns/{columnID}/cards/order -> update cards order
-	switch len(parts) {
-	case 1:
-		// Expect: PUT /api/columns/{columnID}
-		columnID := parts[0]
-		if columnID == "" {
-			http.Error(w, "columnID required", http.StatusBadRequest)
-			return
-		}
-		var req UpdateColumnRequest
-		if err := parseJSONBody(r, &req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if err := h.Parser.UpdateColumnTitle(columnID, req.Title); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
-	case 2:
-		// Expect: PUT /api/columns/{columnID}/cards
-		columnID := parts[0]
-		if parts[1] != "cards" {
-			http.Error(w, "invalid path segment", http.StatusBadRequest)
-			return
-		}
-		var req CreateCardRequest
-		if err := parseJSONBody(r, &req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if err := h.Parser.CreateCard(columnID, req.Title, req.Description); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusCreated)
-	case 3:
-		// Expect: PUT /api/columns/{columnID}/cards/{cardID}
-		// or PUT /api/columns/{columnID}/cards/order
-		columnID := parts[0]
-		if parts[1] != "cards" {
-			http.Error(w, "invalid path segment", http.StatusBadRequest)
-			return
-		}
-		cardID := parts[2]
-
-		if cardID == "order" {
-			// Handle cards reordering
-			var req CardOrderRequest
-			if err := parseJSONBody(r, &req); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			if err := h.Parser.UpdateCardsOrder(columnID, req.Cards); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		// Handle card details update
-		var req UpdateCardRequest
-		if err := parseJSONBody(r, &req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if err := h.Parser.UpdateCardDetails(columnID, cardID, req.Title, req.Description); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
-	default:
-		http.Error(w, "invalid path", http.StatusBadRequest)
+	if err := h.Parser.UpdateColumnTitle(columnID, req.Title); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// CreateCard handles PUT /columns/{columnID}/cards
+func (h *Handler) CreateCard(w http.ResponseWriter, r *http.Request) {
+	columnID := chi.URLParam(r, "columnID")
+	var req CreateCardRequest
+	if err := parseJSONBody(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.Parser.CreateCard(columnID, req.Title, req.Description); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+// UpdateCardsOrder handles PUT /columns/{columnID}/cards/order
+func (h *Handler) UpdateCardsOrder(w http.ResponseWriter, r *http.Request) {
+	columnID := chi.URLParam(r, "columnID")
+	var req CardOrderRequest
+	if err := parseJSONBody(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.Parser.UpdateCardsOrder(columnID, req.Cards); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// UpdateCardDetails handles PUT /columns/{columnID}/cards/{cardID}
+func (h *Handler) UpdateCardDetails(w http.ResponseWriter, r *http.Request) {
+	columnID := chi.URLParam(r, "columnID")
+	cardID := chi.URLParam(r, "cardID")
+
+	var req UpdateCardRequest
+	if err := parseJSONBody(r, &req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.Parser.UpdateCardDetails(columnID, cardID, req.Title, req.Description); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func parseJSONBody(r *http.Request, v interface{}) error {

@@ -1,44 +1,117 @@
-document.addEventListener('alpine:init', () => {
+document.addEventListener("alpine:init", () => {
+  // Title editing component
+  Alpine.data("titleEdit", () => ({
+    editing: false,
+    title: "",
+    originalTitle: "",
+
+    init() {
+      this.title = this.$root.dataset.title;
+      this.originalTitle = this.title;
+    },
+
+    async save() {
+      try {
+        const response = await fetch("/api/board/title", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: this.title }),
+        });
+        if (!response.ok) throw new Error("Failed to update title");
+        this.originalTitle = this.title;
+        this.editing = false;
+      } catch (error) {
+        console.error(error);
+        this.title = this.originalTitle;
+        this.editing = false;
+      }
+    },
+  }));
+
+  // Theme toggle component
+  Alpine.data("themeToggle", () => ({
+    isDark: false,
+
+    init() {
+      // Check for saved theme preference or system preference
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme) {
+        this.isDark = savedTheme === "dark";
+      } else {
+        this.isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      }
+
+      // Apply initial theme
+      this.updateTheme();
+
+      // Listen for system theme changes
+      window
+        .matchMedia("(prefers-color-scheme: dark)")
+        .addEventListener("change", (e) => {
+          if (!localStorage.getItem("theme")) {
+            this.isDark = e.matches;
+            this.updateTheme();
+          }
+        });
+    },
+
+    toggleTheme() {
+      this.isDark = !this.isDark;
+      this.updateTheme();
+      localStorage.setItem("theme", this.isDark ? "dark" : "light");
+    },
+
+    updateTheme() {
+      document.documentElement.setAttribute(
+        "data-theme",
+        this.isDark ? "dark" : "light"
+      );
+    },
+  }));
+
   // Card edit modal component
-  Alpine.data('cardEditModal', () => ({
+  Alpine.data("cardEditModal", () => ({
     form: {
-      title: '',
-      description: '',
-      columnId: '',
-      cardId: ''
+      title: "",
+      description: "",
+      columnId: "",
+      cardId: "",
     },
 
     init() {
-      this.$watch('form', (value) => {
-        console.log('Form updated:', value);
+      this.$watch("form", (value) => {
+        console.log("Form updated:", value);
       });
 
-      window.addEventListener('open-edit-modal', (event) => {
+      window.addEventListener("open-edit-modal", (event) => {
         const { columnId, cardId, title, description } = event.detail;
         this.form.columnId = columnId;
         this.form.cardId = cardId;
         this.form.title = title;
         this.form.description = description;
-        document.getElementById('edit-modal').showModal();
+        document.getElementById("edit-modal").showModal();
       });
     },
 
     closeModal() {
-      document.getElementById('edit-modal').close();
+      document.getElementById("edit-modal").close();
     },
 
     async saveCard() {
       try {
-        const response = await fetch(`/api/columns/${this.form.columnId}/cards/${this.form.cardId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            title: this.form.title,
-            description: this.form.description
-          })
-        });
+        const response = await fetch(
+          `/api/columns/${this.form.columnId}/cards/${this.form.cardId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              title: this.form.title,
+              description: this.form.description,
+            }),
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`Failed to update card: ${response.statusText}`);
@@ -49,11 +122,11 @@ document.addEventListener('alpine:init', () => {
       } catch (error) {
         showError(error.message);
       }
-    }
+    },
   }));
 
   // Desktop board component
-  Alpine.data('desktopBoard', () => ({
+  Alpine.data("desktopBoard", () => ({
     init() {
       // Initialize Sortable for desktop view
       this.initializeSortable();
@@ -68,7 +141,7 @@ document.addEventListener('alpine:init', () => {
         ghostClass: "sortable-ghost",
         chosenClass: "sortable-chosen",
         dragClass: "sortable-drag",
-        onEnd: async function(evt) {
+        onEnd: async function (evt) {
           try {
             const columns = Array.from(evt.to.children)
               .map((col) => col.dataset.columnId)
@@ -93,7 +166,7 @@ document.addEventListener('alpine:init', () => {
           invertSwap: true,
           direction: "vertical",
           emptyInsertThreshold: 5,
-          onEnd: async function(evt) {
+          onEnd: async function (evt) {
             const toColumn = evt.to.closest(".column");
             const toColumnId = toColumn.dataset.columnId;
             try {
@@ -110,13 +183,13 @@ document.addEventListener('alpine:init', () => {
           },
         });
       });
-    }
+    },
   }));
 
   // Mobile board component
-  Alpine.data('mobileBoard', () => ({
+  Alpine.data("mobileBoard", () => ({
     currentColumn: 0,
-    columnCount: document.querySelectorAll('.mobile-column').length,
+    columnCount: document.querySelectorAll(".mobile-column").length,
     isDragging: false,
     touchStartX: 0,
     touchEndX: 0,
@@ -132,42 +205,53 @@ document.addEventListener('alpine:init', () => {
 
     initializeTouchEvents() {
       const board = this.$el;
-      
-      board.addEventListener('touchstart', (e) => {
-        if (this.isDragging) return;
-        this.touchStartX = e.touches[0].clientX;
-        this.touchStartTime = Date.now();
-      }, { passive: true });
 
-      board.addEventListener('touchmove', (e) => {
-        if (this.isDragging) return;
-        this.touchEndX = e.touches[0].clientX;
-      }, { passive: true });
+      board.addEventListener(
+        "touchstart",
+        (e) => {
+          if (this.isDragging) return;
+          this.touchStartX = e.touches[0].clientX;
+          this.touchStartTime = Date.now();
+        },
+        { passive: true }
+      );
 
-      board.addEventListener('touchend', () => {
+      board.addEventListener(
+        "touchmove",
+        (e) => {
+          if (this.isDragging) return;
+          this.touchEndX = e.touches[0].clientX;
+        },
+        { passive: true }
+      );
+
+      board.addEventListener("touchend", () => {
         if (this.isDragging) return;
-        
+
         // Only process if we have both start and end coordinates
         if (!this.touchStartX || !this.touchEndX) return;
-        
+
         const swipeDistance = this.touchStartX - this.touchEndX;
         const minSwipeDistance = 50; // Minimum distance for a swipe
         const touchDuration = Date.now() - this.touchStartTime;
         const maxSwipeTime = 300; // Maximum time for a swipe in milliseconds
 
         // Only process if it's a quick swipe motion
-        if (touchDuration <= maxSwipeTime && Math.abs(swipeDistance) >= minSwipeDistance) {
+        if (
+          touchDuration <= maxSwipeTime &&
+          Math.abs(swipeDistance) >= minSwipeDistance
+        ) {
           if (swipeDistance > 0 && this.currentColumn < this.columnCount - 1) {
             // Swipe left -> next column
-            this.swipeDirection = 'left';
+            this.swipeDirection = "left";
             this.currentColumn++;
           } else if (swipeDistance < 0 && this.currentColumn > 0) {
             // Swipe right -> previous column
-            this.swipeDirection = 'right';
+            this.swipeDirection = "right";
             this.currentColumn--;
           }
         }
-        
+
         // Reset touch coordinates
         this.touchStartX = 0;
         this.touchEndX = 0;
@@ -198,31 +282,42 @@ document.addEventListener('alpine:init', () => {
           fallbackClass: "sortable-fallback",
           dragoverBubble: false, // Prevent dragover event bubbling
           // Safety checks
-          onChoose: function(evt) {
+          onChoose: function (evt) {
             const touchY = evt.originalEvent?.touches?.[0]?.clientY;
-            if (!touchY || Math.abs(touchY - evt.originalEvent.target.getBoundingClientRect().top) < 30) {
+            if (
+              !touchY ||
+              Math.abs(
+                touchY - evt.originalEvent.target.getBoundingClientRect().top
+              ) < 30
+            ) {
               evt.preventDefault(); // Prevent drag if touch is too close to edge
             }
           },
-          onStart: function(evt) {
-            const mobileBoard = Alpine.raw(evt.to.closest('[x-data="mobileBoard"]').__x.$data);
+          onStart: function (evt) {
+            const mobileBoard = Alpine.raw(
+              evt.to.closest('[x-data="mobileBoard"]').__x.$data
+            );
             mobileBoard.isDragging = true;
-            evt.from.classList.add('dragging');
+            evt.from.classList.add("dragging");
           },
-          onMove: function(evt) {
+          onMove: function (evt) {
             // Additional safety check during movement
-            if (evt.related && !evt.related.classList.contains('mobile-card')) {
+            if (evt.related && !evt.related.classList.contains("mobile-card")) {
               return false; // Prevent dropping on non-card elements
             }
             return true;
           },
-          onEnd: async function(evt) {
+          onEnd: async function (evt) {
             const toColumn = evt.to.closest(".mobile-column");
             const toColumnId = toColumn.dataset.columnId;
-            const mobileBoard = Alpine.raw(evt.to.closest('[x-data="mobileBoard"]').__x.$data);
-            
+            const mobileBoard = Alpine.raw(
+              evt.to.closest('[x-data="mobileBoard"]').__x.$data
+            );
+
             try {
-              const taskIds = Array.from(toColumn.querySelectorAll(".mobile-card"))
+              const taskIds = Array.from(
+                toColumn.querySelectorAll(".mobile-card")
+              )
                 .map((card) => card.dataset.cardId)
                 .filter(Boolean);
               await updateOrder(`/api/columns/${toColumnId}/cards/order`, {
@@ -238,43 +333,46 @@ document.addEventListener('alpine:init', () => {
           },
         });
       });
-    }
+    },
   }));
 
   // New task modal component
-  Alpine.data('newTaskModal', () => ({
+  Alpine.data("newTaskModal", () => ({
     form: {
-      title: '',
-      description: '',
-      columnId: ''
+      title: "",
+      description: "",
+      columnId: "",
     },
 
     init() {
-      window.addEventListener('open-new-task-modal', (event) => {
+      window.addEventListener("open-new-task-modal", (event) => {
         const { columnId } = event.detail;
         this.form.columnId = columnId;
-        this.form.title = '';
-        this.form.description = '';
-        document.getElementById('new-task-modal').showModal();
+        this.form.title = "";
+        this.form.description = "";
+        document.getElementById("new-task-modal").showModal();
       });
     },
 
     closeModal() {
-      document.getElementById('new-task-modal').close();
+      document.getElementById("new-task-modal").close();
     },
 
     async saveTask() {
       try {
-        const response = await fetch(`/api/columns/${this.form.columnId}/cards`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            title: this.form.title,
-            description: this.form.description
-          })
-        });
+        const response = await fetch(
+          `/api/columns/${this.form.columnId}/cards`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              title: this.form.title,
+              description: this.form.description,
+            }),
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`Failed to create task: ${response.statusText}`);
@@ -285,7 +383,7 @@ document.addEventListener('alpine:init', () => {
       } catch (error) {
         showError(error.message);
       }
-    }
+    },
   }));
 });
 

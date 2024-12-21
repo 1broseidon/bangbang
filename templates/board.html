@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>{{.Title}}</title>
     <link rel="stylesheet" href="/static/css/lib/pico.min.css" />
     <link rel="stylesheet" href="/static/css/style.css" />
@@ -10,60 +13,59 @@
     <script src="/static/js/lib/marked.min.js"></script>
   </head>
   <body>
-    <header class="header">
-      <h1 
-        x-data="{ 
-          editing: false, 
-          title: '{{.Title}}',
-          originalTitle: '{{.Title}}',
-          displayTitle() {
-            return '## ' + this.title;
-          },
-          async save() {
-            try {
-              const response = await fetch('/api/board/title', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: this.title })
-              });
-              if (!response.ok) throw new Error('Failed to update title');
-              this.originalTitle = this.title;
-              this.editing = false;
-            } catch (error) {
-              console.error(error);
-              this.title = this.originalTitle;
-              this.editing = false;
-            }
-          }
-        }"
-        @click="editing = true"
-        @keydown.enter="save()"
-        @keydown.escape="editing = false; title = originalTitle"
-        @blur="editing = false; title = originalTitle"
-        :class="{ 'editing': editing }"
+    <header class="header" x-data="themeToggle">
+      <button
+        @click="toggleTheme"
+        class="theme-toggle outline"
+        :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
       >
-        <template x-if="!editing"><span x-text="displayTitle()"></span></template>
-        <div x-show="editing" class="title-input-wrapper">
-          <span class="title-prefix">##&nbsp;</span>
-          <input
-            type="text"
-            x-model="title"
+        <img
+          :src="isDark ? '/static/img/theme-light.svg' : '/static/img/theme-dark.svg'"
+          :alt="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
+          class="theme-icon"
+        />
+      </button>
+      <h1 class="title" x-data="titleEdit" data-title="{{.Title}}">
+        <span x-show="!editing" @click="editing = true" x-text="title"></span>
+        <input
+          x-show="editing"
+          type="text"
+          x-model="title"
           @click.stop
           x-ref="titleInput"
           x-init="$watch('editing', value => value && $nextTick(() => $refs.titleInput.focus()))"
-        >
+          @keydown.enter="save()"
+          @keydown.escape="editing = false; title = originalTitle"
+          @blur="save()"
+        />
       </h1>
     </header>
     <main class="container">
       <!-- Desktop View -->
-      <div class="desktop-view" x-data="desktopBoard" x-show="window.innerWidth > 768">
+      <div
+        class="desktop-view"
+        x-data="desktopBoard"
+        x-show="window.innerWidth > 768"
+      >
         <div class="desktop-board" id="desktop-board">
           {{range $index, $column := .Columns}}
-          <div class="column" data-column-id="{{$column.ID}}" data-index="{{$index}}">
+          <div
+            class="column"
+            data-column-id="{{$column.ID}}"
+            data-index="{{$index}}"
+          >
             <div class="column-header">
               <h2>{{$column.Title}}</h2>
-              <button class="icon-button" @click="$dispatch('open-new-task-modal', { columnId: '{{$column.ID}}' })" aria-label="Add new task">
-                <img src="/static/img/add-task.svg" alt="Add task" class="add-task-icon">
+              <button
+                class="icon-button"
+                @click="$dispatch('open-new-task-modal', { columnId: '{{$column.ID}}' })"
+                aria-label="Add new task"
+              >
+                <img
+                  src="/static/img/add-task.svg"
+                  alt="Add task"
+                  class="add-task-icon"
+                />
               </button>
             </div>
             <div class="desktop-card-list" data-column-id="{{$column.ID}}">
@@ -71,8 +73,16 @@
               <div class="card" data-card-id="{{$card.ID}}">
                 <div class="card-header">
                   <h3>{{$card.Title}}</h3>
-                  <button class="edit-button outline secondary icon-only" @click="$dispatch('open-edit-modal', { columnId: '{{$column.ID}}', cardId: '{{$card.ID}}', title: '{{$card.Title}}', description: `{{$card.Description}}` })" aria-label="Edit card">
-                    <img src="/static/img/edit-icon.svg" alt="Edit" class="edit-icon">
+                  <button
+                    class="edit-button outline secondary icon-only"
+                    @click="$dispatch('open-edit-modal', { columnId: '{{$column.ID}}', cardId: '{{$card.ID}}', title: '{{$card.Title}}', description: `{{$card.Description}}` })"
+                    aria-label="Edit card"
+                  >
+                    <img
+                      src="/static/img/edit-icon.svg"
+                      alt="Edit"
+                      class="edit-icon"
+                    />
                   </button>
                 </div>
                 <div x-html="marked.parse(`{{$card.Description}}`)"></div>
@@ -85,20 +95,24 @@
       </div>
 
       <!-- Mobile View -->
-      <div class="mobile-view" x-data="mobileBoard" x-show="window.innerWidth <= 768" x-cloak>
-        
+      <div
+        class="mobile-view"
+        x-data="mobileBoard"
+        x-show="window.innerWidth <= 768"
+        x-cloak
+      >
         <div class="mobile-board">
           <div class="column-indicator">
             {{range $index, $column := .Columns}}
-            <div 
+            <div
               class="indicator-dot"
               :class="{ 'active': currentColumn === {{$index}} }"
             ></div>
             {{end}}
           </div>
           {{range $index, $column := .Columns}}
-          <div 
-            class="mobile-column" 
+          <div
+            class="mobile-column"
             data-column-id="{{$column.ID}}"
             x-show="currentColumn === {{$index}}"
             :class="{
@@ -114,8 +128,16 @@
               <div class="mobile-card" data-card-id="{{$card.ID}}">
                 <div class="card-header">
                   <h3>{{$card.Title}}</h3>
-                  <button class="edit-button outline secondary icon-only" @click="$dispatch('open-edit-modal', { columnId: '{{$column.ID}}', cardId: '{{$card.ID}}', title: '{{$card.Title}}', description: `{{$card.Description}}` })" aria-label="Edit card">
-                    <img src="/static/img/edit-icon.svg" alt="Edit" class="edit-icon">
+                  <button
+                    class="edit-button outline secondary icon-only"
+                    @click="$dispatch('open-edit-modal', { columnId: '{{$column.ID}}', cardId: '{{$card.ID}}', title: '{{$card.Title}}', description: `{{$card.Description}}` })"
+                    aria-label="Edit card"
+                  >
+                    <img
+                      src="/static/img/edit-icon.svg"
+                      alt="Edit"
+                      class="edit-icon"
+                    />
                   </button>
                 </div>
                 <div x-html="marked.parse(`{{$card.Description}}`)"></div>
@@ -125,7 +147,6 @@
           </div>
           {{end}}
         </div>
-
       </div>
     </main>
 
@@ -138,16 +159,22 @@
         <form @submit.prevent="saveTask">
           <label for="task-title">
             Title
-            <input type="text" id="task-title" x-model="form.title" required>
+            <input type="text" id="task-title" x-model="form.title" required />
           </label>
-          
+
           <label for="task-description">
             Description
-            <textarea id="task-description" x-model="form.description" rows="4"></textarea>
+            <textarea
+              id="task-description"
+              x-model="form.description"
+              rows="4"
+            ></textarea>
           </label>
-          
+
           <footer class="grid">
-            <button type="button" class="secondary" @click="closeModal">Cancel</button>
+            <button type="button" class="secondary" @click="closeModal">
+              Cancel
+            </button>
             <button type="submit">Create</button>
           </footer>
         </form>
@@ -163,16 +190,22 @@
         <form @submit.prevent="saveCard">
           <label for="card-title">
             Title
-            <input type="text" id="card-title" x-model="form.title" required>
+            <input type="text" id="card-title" x-model="form.title" required />
           </label>
-          
+
           <label for="card-description">
             Description
-            <textarea id="card-description" x-model="form.description" rows="4"></textarea>
+            <textarea
+              id="card-description"
+              x-model="form.description"
+              rows="4"
+            ></textarea>
           </label>
-          
+
           <footer class="grid">
-            <button type="button" class="secondary" @click="closeModal">Cancel</button>
+            <button type="button" class="secondary" @click="closeModal">
+              Cancel
+            </button>
             <button type="submit">Save</button>
           </footer>
         </form>
