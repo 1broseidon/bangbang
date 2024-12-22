@@ -3,7 +3,7 @@
   <head>
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <title>{{.Title}}</title>
     <link rel="stylesheet" href="/static/css/lib/pico.min.css" />
@@ -12,19 +12,8 @@
     <script defer src="/static/js/lib/alpine.min.js" defer></script>
     <script src="/static/js/lib/marked.min.js"></script>
   </head>
-  <body>
-    <header class="header" x-data="themeToggle">
-      <button
-        @click="toggleTheme"
-        class="theme-toggle outline"
-        :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
-      >
-        <img
-          :src="isDark ? '/static/img/theme-light.svg' : '/static/img/theme-dark.svg'"
-          :alt="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
-          class="theme-icon"
-        />
-      </button>
+  <body data-multi-project="{{.MultiProject}}">
+    <header class="header">
       <h1 class="title" x-data="titleEdit" data-title="{{.Title}}">
         <span x-show="!editing" @click="editing = true" x-text="title"></span>
         <input
@@ -39,6 +28,33 @@
           @blur="save()"
         />
       </h1>
+      <div class="header-controls">
+        <div x-data="projectSelector">
+          <select
+            x-show="isMultiProject"
+            x-model="currentProject"
+            @change="switchProject"
+            class="project-select outline"
+          >
+            <template x-for="project in projects">
+              <option :value="project" x-text="project"></option>
+            </template>
+          </select>
+        </div>
+        <div x-data="themeToggle">
+          <button
+            @click="toggleTheme"
+            class="theme-toggle outline"
+            :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
+          >
+            <img
+              :src="isDark ? '/static/img/theme-light.svg' : '/static/img/theme-dark.svg'"
+              :alt="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
+              class="theme-icon"
+            />
+          </button>
+        </div>
+      </div>
     </header>
     <main class="container">
       <!-- Desktop View -->
@@ -86,6 +102,14 @@
                   </button>
                 </div>
                 <div x-html="marked.parse(`{{$card.Description}}`)"></div>
+                {{if gt (len $card.Comments) 0}}
+                <div class="comment-count">
+                  <span
+                    >{{len $card.Comments}} comment{{if gt (len $card.Comments)
+                    1}}s{{end}}</span
+                  >
+                </div>
+                {{end}}
               </div>
               {{end}}
             </div>
@@ -141,6 +165,14 @@
                   </button>
                 </div>
                 <div x-html="marked.parse(`{{$card.Description}}`)"></div>
+                {{if gt (len $card.Comments) 0}}
+                <div class="comment-count">
+                  <span
+                    >{{len $card.Comments}} comment{{if gt (len $card.Comments)
+                    1}}s{{end}}</span
+                  >
+                </div>
+                {{end}}
               </div>
               {{end}}
             </div>
@@ -152,63 +184,173 @@
 
     <!-- New Task Modal -->
     <dialog id="new-task-modal" x-data="newTaskModal">
-      <article>
-        <header>
+      <article class="modal-content">
+        <header class="modal-header">
           <h3>New Task</h3>
         </header>
         <form @submit.prevent="saveTask">
-          <label for="task-title">
-            Title
-            <input type="text" id="task-title" x-model="form.title" required />
-          </label>
+          <div class="grid">
+            <label for="task-title">
+              Title
+              <input
+                type="text"
+                id="task-title"
+                x-model="form.title"
+                required
+                placeholder="Enter task title"
+              />
+            </label>
+          </div>
 
-          <label for="task-description">
-            Description
-            <textarea
-              id="task-description"
-              x-model="form.description"
-              rows="4"
-            ></textarea>
-          </label>
+          <div class="grid">
+            <label for="task-description">
+              Description
+              <textarea
+                id="task-description"
+                x-model="form.description"
+                rows="4"
+                placeholder="Enter task description (optional)"
+              ></textarea>
+            </label>
+          </div>
 
           <footer class="grid">
-            <button type="button" class="secondary" @click="closeModal">
+            <button type="button" class="secondary outline" @click="closeModal">
               Cancel
             </button>
-            <button type="submit">Create</button>
+            <button type="submit" class="primary">Create</button>
           </footer>
         </form>
       </article>
     </dialog>
 
     <!-- Card Edit Modal -->
-    <dialog id="edit-modal" x-data="cardEditModal">
-      <article>
-        <header>
-          <h3>Edit Card</h3>
-        </header>
-        <form @submit.prevent="saveCard">
-          <label for="card-title">
-            Title
-            <input type="text" id="card-title" x-model="form.title" required />
-          </label>
-
-          <label for="card-description">
-            Description
-            <textarea
-              id="card-description"
-              x-model="form.description"
-              rows="4"
-            ></textarea>
-          </label>
-
-          <footer class="grid">
-            <button type="button" class="secondary" @click="closeModal">
-              Cancel
+    <dialog id="edit-modal" x-data="cardEditModal" @click.self="closeModal">
+      <article class="modal-content">
+        <header class="modal-header">
+          <div class="modal-title">
+            <h3
+              x-show="!titleEditing"
+              @click="titleEditing = true"
+              x-text="form.title"
+            ></h3>
+            <input
+              x-show="titleEditing"
+              type="text"
+              x-model="form.title"
+              @click.stop
+              x-ref="titleInput"
+              x-init="$watch('titleEditing', value => value && $nextTick(() => $refs.titleInput.focus()))"
+              @keydown.enter="saveTitle"
+              @keydown.escape="titleEditing = false; form.title = originalTitle"
+              @blur="saveTitle"
+              class="title-input"
+            />
+            <span class="column-name" x-text="columnName"></span>
+          </div>
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="outline secondary icon-only close-button"
+              @click="closeModal"
+              aria-label="Close modal"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M15 5L5 15M5 5L15 15" />
+              </svg>
             </button>
-            <button type="submit">Save</button>
-          </footer>
-        </form>
+            <button
+              type="button"
+              class="outline secondary icon-only delete-button"
+              @click="deleteCard"
+              aria-label="Delete card"
+            >
+              <img
+                src="/static/img/trash-icon.svg"
+                alt="Delete"
+                class="trash-icon"
+              />
+            </button>
+          </div>
+        </header>
+        <div class="modal-grid">
+          <!-- Left Column: Details -->
+          <div class="details-column">
+            <div class="description-section">
+              <div
+                x-show="!descriptionEditing"
+                @click="descriptionEditing = true"
+                class="description-display"
+                x-html="marked.parse(form.description || '*No description*')"
+              ></div>
+              <textarea
+                x-show="descriptionEditing"
+                x-model="form.description"
+                @click.stop
+                x-ref="descriptionInput"
+                x-init="$watch('descriptionEditing', value => value && $nextTick(() => $refs.descriptionInput.focus()))"
+                @keydown.escape="descriptionEditing = false; form.description = originalDescription"
+                @blur="saveDescription"
+                class="description-input"
+                rows="10"
+                placeholder="Enter description (supports markdown)"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Right Column: Comments -->
+          <div class="comments-column">
+            <!-- Comment Input -->
+            <div class="comment-input">
+              <textarea
+                x-model="form.newComment"
+                placeholder="Add a comment..."
+                rows="2"
+                class="comment-textarea"
+              ></textarea>
+              <button
+                @click="addComment"
+                class="primary comment-submit"
+                :disabled="!form.newComment.trim()"
+              >
+                Add Comment
+              </button>
+            </div>
+
+            <!-- Comments List -->
+            <div class="comments-list">
+              <template x-for="comment in comments" :key="comment.id">
+                <div class="comment">
+                  <div class="comment-header">
+                    <span
+                      class="comment-date"
+                      x-text="formatDate(comment.created_at)"
+                    ></span>
+                    <button
+                      @click="deleteComment(comment.id)"
+                      class="delete-comment outline secondary icon-only"
+                      aria-label="Delete comment"
+                    >
+                      <img
+                        src="/static/img/trash-icon.svg"
+                        alt="Delete"
+                        class="trash-icon"
+                      />
+                    </button>
+                  </div>
+                  <p class="comment-text" x-text="comment.text"></p>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
       </article>
     </dialog>
 

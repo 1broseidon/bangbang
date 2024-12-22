@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/1broseidon/bangbang/internal/models"
 	"gopkg.in/yaml.v3"
@@ -110,14 +112,18 @@ func (p *Parser) moveCards(board *models.Board, targetCol *ColumnOperation, card
 type Parser struct {
 	boardFilePath string
 	debug         bool
+	multiProject  bool
+	directory     string
 }
 
-func NewParser(dir string, debug bool) *Parser {
+func NewParser(dir string, debug bool, multiProject bool) *Parser {
 	// Use .bangbang.md in the specified directory
 	boardFile := filepath.Join(dir, ".bangbang.md")
 	p := &Parser{
 		boardFilePath: boardFile,
 		debug:         debug,
+		multiProject:  multiProject,
+		directory:     dir,
 	}
 
 	// Create file if it doesn't exist
@@ -137,6 +143,46 @@ func NewParser(dir string, debug bool) *Parser {
 	}
 
 	return p
+}
+
+// ListProjects returns a list of available project files when multi-project mode is enabled
+func (p *Parser) ListProjects() ([]string, error) {
+	if !p.multiProject {
+		return nil, fmt.Errorf("multi-project support is not enabled")
+	}
+
+	entries, err := os.ReadDir(p.directory)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory: %w", err)
+	}
+
+	var projects []string
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".bangbang.md") {
+			// Remove .bangbang.md suffix to get project name
+			name := strings.TrimSuffix(entry.Name(), ".bangbang.md")
+			if name != "" { // Skip the default .bangbang.md file
+				projects = append(projects, name)
+			}
+		}
+	}
+
+	return projects, nil
+}
+
+// SwitchProject changes the current project file in multi-project mode
+func (p *Parser) SwitchProject(name string) error {
+	if !p.multiProject {
+		return fmt.Errorf("multi-project support is not enabled")
+	}
+
+	newPath := filepath.Join(p.directory, name+".bangbang.md")
+	if _, err := os.Stat(newPath); err != nil {
+		return fmt.Errorf("project %s not found: %w", name, err)
+	}
+
+	p.boardFilePath = newPath
+	return nil
 }
 
 func (p *Parser) ParseBoard() (*models.Board, error) {
@@ -389,6 +435,266 @@ func (p *Parser) UpdateBoardTitle(newTitle string) error {
 	}
 
 	board.Title = newTitle
+	return p.writeBoard(board)
+}
+
+// DeleteCard removes a card from the specified column
+func (p *Parser) DeleteCard(columnID string, cardID string) error {
+	if p.debug {
+		fmt.Printf("Deleting card - Column: %s, Card: %s\n", columnID, cardID)
+	}
+
+	board, err := p.ParseBoard()
+	if err != nil {
+		if p.debug {
+			fmt.Printf("Error parsing board: %v\n", err)
+		}
+		return err
+	}
+
+	// Find the target column
+	var targetColumn *models.Column
+	for i := range board.Columns {
+		if board.Columns[i].ID == columnID {
+			targetColumn = &board.Columns[i]
+			break
+		}
+	}
+
+	if targetColumn == nil {
+		if p.debug {
+			fmt.Printf("Error: Column %s not found\n", columnID)
+		}
+		return fmt.Errorf("column %s not found", columnID)
+	}
+
+	// Find and remove the target card
+	found := false
+	newTasks := make([]models.Task, 0, len(targetColumn.Tasks)-1)
+	for _, task := range targetColumn.Tasks {
+		if task.ID == cardID {
+			found = true
+			continue
+		}
+		newTasks = append(newTasks, task)
+	}
+
+	if !found {
+		if p.debug {
+			fmt.Printf("Error: Card %s not found in column %s\n", cardID, columnID)
+		}
+		return fmt.Errorf("card %s not found in column %s", cardID, columnID)
+	}
+
+	targetColumn.Tasks = newTasks
+
+	if p.debug {
+		fmt.Printf("Successfully deleted card %s from column %s\n", cardID, columnID)
+	}
+	return p.writeBoard(board)
+}
+
+// DeleteColumn removes a column from the board
+func (p *Parser) DeleteColumn(columnID string) error {
+	if p.debug {
+		fmt.Printf("Deleting column - ID: %s\n", columnID)
+	}
+
+	board, err := p.ParseBoard()
+	if err != nil {
+		if p.debug {
+			fmt.Printf("Error parsing board: %v\n", err)
+		}
+		return err
+	}
+
+	// Find and remove the target column
+	found := false
+	newColumns := make([]models.Column, 0, len(board.Columns)-1)
+	for _, col := range board.Columns {
+		if col.ID == columnID {
+			found = true
+			continue
+		}
+		newColumns = append(newColumns, col)
+	}
+
+	if !found {
+		if p.debug {
+			fmt.Printf("Error: Column %s not found\n", columnID)
+		}
+		return fmt.Errorf("column %s not found", columnID)
+	}
+
+	board.Columns = newColumns
+
+	if p.debug {
+		fmt.Printf("Successfully deleted column %s\n", columnID)
+	}
+	return p.writeBoard(board)
+}
+
+// CreateColumn adds a new column to the board
+func (p *Parser) CreateColumn(title string) error {
+	if p.debug {
+		fmt.Printf("Creating new column - Title: %s\n", title)
+	}
+
+	board, err := p.ParseBoard()
+	if err != nil {
+		if p.debug {
+			fmt.Printf("Error parsing board: %v\n", err)
+		}
+		return err
+	}
+
+	// Create new column with unique ID based on title
+	newColumn := models.Column{
+		ID:    fmt.Sprintf("%s-%d", strings.ToLower(strings.ReplaceAll(title, " ", "-")), len(board.Columns)+1),
+		Title: title,
+		Tasks: []models.Task{},
+	}
+
+	// Add column to board
+	board.Columns = append(board.Columns, newColumn)
+
+	if p.debug {
+		fmt.Printf("Successfully created new column %s\n", newColumn.ID)
+	}
+	return p.writeBoard(board)
+}
+
+// CreateComment adds a new comment to a card
+func (p *Parser) CreateComment(columnID string, cardID string, text string) error {
+	if p.debug {
+		fmt.Printf("Creating comment - Column: %s, Card: %s\n", columnID, cardID)
+	}
+
+	board, err := p.ParseBoard()
+	if err != nil {
+		if p.debug {
+			fmt.Printf("Error parsing board: %v\n", err)
+		}
+		return err
+	}
+
+	// Find the target column
+	var targetColumn *models.Column
+	for i := range board.Columns {
+		if board.Columns[i].ID == columnID {
+			targetColumn = &board.Columns[i]
+			break
+		}
+	}
+
+	if targetColumn == nil {
+		if p.debug {
+			fmt.Printf("Error: Column %s not found\n", columnID)
+		}
+		return fmt.Errorf("column %s not found", columnID)
+	}
+
+	// Find the target card
+	var targetCard *models.Task
+	for i := range targetColumn.Tasks {
+		if targetColumn.Tasks[i].ID == cardID {
+			targetCard = &targetColumn.Tasks[i]
+			break
+		}
+	}
+
+	if targetCard == nil {
+		if p.debug {
+			fmt.Printf("Error: Card %s not found in column %s\n", cardID, columnID)
+		}
+		return fmt.Errorf("card %s not found in column %s", cardID, columnID)
+	}
+
+	// Create new comment
+	comment := models.Comment{
+		ID:        fmt.Sprintf("comment-%d", len(targetCard.Comments)+1),
+		Text:      text,
+		CreatedAt: time.Now(),
+	}
+
+	// Add comment to card
+	targetCard.Comments = append(targetCard.Comments, comment)
+
+	if p.debug {
+		fmt.Printf("Successfully created comment %s for card %s\n", comment.ID, cardID)
+	}
+	return p.writeBoard(board)
+}
+
+// DeleteComment removes a comment from a card
+func (p *Parser) DeleteComment(columnID string, cardID string, commentID string) error {
+	if p.debug {
+		fmt.Printf("Deleting comment - Column: %s, Card: %s, Comment: %s\n", columnID, cardID, commentID)
+	}
+
+	board, err := p.ParseBoard()
+	if err != nil {
+		if p.debug {
+			fmt.Printf("Error parsing board: %v\n", err)
+		}
+		return err
+	}
+
+	// Find the target column
+	var targetColumn *models.Column
+	for i := range board.Columns {
+		if board.Columns[i].ID == columnID {
+			targetColumn = &board.Columns[i]
+			break
+		}
+	}
+
+	if targetColumn == nil {
+		if p.debug {
+			fmt.Printf("Error: Column %s not found\n", columnID)
+		}
+		return fmt.Errorf("column %s not found", columnID)
+	}
+
+	// Find the target card
+	var targetCard *models.Task
+	for i := range targetColumn.Tasks {
+		if targetColumn.Tasks[i].ID == cardID {
+			targetCard = &targetColumn.Tasks[i]
+			break
+		}
+	}
+
+	if targetCard == nil {
+		if p.debug {
+			fmt.Printf("Error: Card %s not found in column %s\n", cardID, columnID)
+		}
+		return fmt.Errorf("card %s not found in column %s", cardID, columnID)
+	}
+
+	// Find and remove the target comment
+	found := false
+	newComments := make([]models.Comment, 0, len(targetCard.Comments)-1)
+	for _, comment := range targetCard.Comments {
+		if comment.ID == commentID {
+			found = true
+			continue
+		}
+		newComments = append(newComments, comment)
+	}
+
+	if !found {
+		if p.debug {
+			fmt.Printf("Error: Comment %s not found in card %s\n", commentID, cardID)
+		}
+		return fmt.Errorf("comment %s not found in card %s", commentID, cardID)
+	}
+
+	targetCard.Comments = newComments
+
+	if p.debug {
+		fmt.Printf("Successfully deleted comment %s from card %s\n", commentID, cardID)
+	}
 	return p.writeBoard(board)
 }
 

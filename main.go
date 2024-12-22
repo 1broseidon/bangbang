@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/1broseidon/bangbang/internal/api"
+	"github.com/1broseidon/bangbang/internal/models"
 	"github.com/1broseidon/bangbang/internal/parser"
 	"github.com/go-chi/chi/v5"
 	"github.com/spf13/pflag"
@@ -26,13 +27,14 @@ var templateFS embed.FS
 var staticFS embed.FS
 
 func main() {
-	dirPath := pflag.StringP("dir", "d", ".", "Directory containing .bangbang.md")
+	dirPath := pflag.StringP("dir", "d", ".", "Directory containing .bangbang.md files")
 	port := pflag.IntP("port", "p", 9000, "Port to run the server on")
 	debug := pflag.BoolP("debug", "D", false, "Enable debug logging")
+	multiProject := pflag.BoolP("multi-project", "m", false, "Enable multi-project support")
 	pflag.Parse()
 
-	// Create parser instance with debug flag
-	p := parser.NewParser(*dirPath, *debug)
+	// Create parser instance with debug and multi-project flags
+	p := parser.NewParser(*dirPath, *debug, *multiProject)
 
 	// Create API handler
 	h := &api.Handler{
@@ -61,7 +63,16 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if err := tmpl.Execute(w, board); err != nil {
+
+		data := struct {
+			*models.Board
+			MultiProject bool
+		}{
+			Board:        board,
+			MultiProject: *multiProject,
+		}
+
+		if err := tmpl.Execute(w, data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

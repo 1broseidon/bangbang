@@ -69,6 +69,48 @@ document.addEventListener("alpine:init", () => {
     },
   }));
 
+  // Project selector component
+  Alpine.data("projectSelector", () => ({
+    isMultiProject: false,
+    projects: [],
+    currentProject: "",
+
+    init() {
+      // Check if multi-project mode is enabled
+      this.isMultiProject = document.body.dataset.multiProject === "true";
+      if (this.isMultiProject) {
+        this.fetchProjects();
+      }
+    },
+
+    async fetchProjects() {
+      try {
+        const response = await fetch("/api/projects");
+        if (!response.ok) throw new Error("Failed to fetch projects");
+        const data = await response.json();
+        this.projects = data.projects;
+        if (this.projects.length > 0 && !this.currentProject) {
+          this.currentProject = this.projects[0];
+        }
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
+      }
+    },
+
+    async switchProject() {
+      if (!this.currentProject) return;
+      try {
+        const response = await fetch(`/api/projects/${this.currentProject}`, {
+          method: "PUT",
+        });
+        if (!response.ok) throw new Error("Failed to switch project");
+        window.location.reload();
+      } catch (error) {
+        console.error("Failed to switch project:", error);
+      }
+    },
+  }));
+
   // Card edit modal component
   Alpine.data("cardEditModal", () => ({
     form: {
@@ -76,28 +118,146 @@ document.addEventListener("alpine:init", () => {
       description: "",
       columnId: "",
       cardId: "",
+      newComment: "",
+    },
+    comments: [],
+    loading: false,
+    columnName: "",
+    titleEditing: false,
+    descriptionEditing: false,
+    originalTitle: "",
+    originalDescription: "",
+
+    async updateBoard() {
+      // Update both desktop and mobile cards
+      const cards = document.querySelectorAll(
+        `[data-card-id="${this.form.cardId}"]`
+      );
+      cards.forEach((card) => {
+        const titleEl = card.querySelector("h3");
+        const descEl = card.querySelector("div:nth-child(2)");
+        if (titleEl) titleEl.textContent = this.form.title;
+        if (descEl)
+          descEl.innerHTML = marked.parse(this.form.description || "");
+      });
+    },
+
+    async saveTitle() {
+      if (this.form.title === this.originalTitle) {
+        this.titleEditing = false;
+        return;
+      }
+      try {
+        await this.saveCard(false);
+        this.originalTitle = this.form.title;
+        await this.updateBoard();
+      } catch (error) {
+        this.form.title = this.originalTitle;
+      }
+      this.titleEditing = false;
+    },
+
+    async saveDescription() {
+      if (this.form.description === this.originalDescription) {
+        this.descriptionEditing = false;
+        return;
+      }
+      try {
+        await this.saveCard(false);
+        this.originalDescription = this.form.description;
+        await this.updateBoard();
+      } catch (error) {
+        this.form.description = this.originalDescription;
+      }
+      this.descriptionEditing = false;
+    },
+
+    async deleteCard() {
+      if (!confirm("Are you sure you want to delete this card?")) {
+        return;
+      }
+
+      try {
+        await deleteCard(this.form.columnId, this.form.cardId);
+        this.closeModal();
+        window.location.reload();
+      } catch (error) {
+        showError(error.message);
+      }
+    },
+
+    async deleteComment(commentId) {
+      if (!confirm("Are you sure you want to delete this comment?")) {
+        return;
+      }
+
+      try {
+        await deleteComment(this.form.columnId, this.form.cardId, commentId);
+        await this.loadComments();
+      } catch (error) {
+        showError(error.message);
+      }
+    },
+
+    async addComment() {
+      if (!this.form.newComment.trim()) return;
+
+      try {
+        await createComment(
+          this.form.columnId,
+          this.form.cardId,
+          this.form.newComment
+        );
+        this.form.newComment = "";
+        await this.loadComments();
+      } catch (error) {
+        showError(error.message);
+      }
+    },
+
+    formatDate(dateString) {
+      return new Date(dateString).toLocaleString();
+    },
+
+    async loadComments() {
+      try {
+        const card = await fetchCard(this.form.columnId, this.form.cardId);
+        this.comments = card.comments || [];
+      } catch (error) {
+        showError(error.message);
+      }
     },
 
     init() {
-      this.$watch("form", (value) => {
-        console.log("Form updated:", value);
-      });
-
-      window.addEventListener("open-edit-modal", (event) => {
+      window.addEventListener("open-edit-modal", async (event) => {
         const { columnId, cardId, title, description } = event.detail;
         this.form.columnId = columnId;
         this.form.cardId = cardId;
         this.form.title = title;
+        this.originalTitle = title;
         this.form.description = description;
+        this.originalDescription = description;
+        this.form.newComment = "";
+        this.titleEditing = false;
+        this.descriptionEditing = false;
+
+        const column = document.querySelector(
+          `[data-column-id="${columnId}"] h2`
+        );
+        this.columnName = column ? column.textContent : "";
+
+        await this.loadComments();
         document.getElementById("edit-modal").showModal();
       });
     },
 
     closeModal() {
       document.getElementById("edit-modal").close();
+      this.comments = [];
+      this.form.newComment = "";
     },
 
-    async saveCard() {
+    async saveCard(closeAfter = true) {
       try {
         const response = await fetch(
           `/api/columns/${this.form.columnId}/cards/${this.form.cardId}`,
@@ -117,10 +277,13 @@ document.addEventListener("alpine:init", () => {
           throw new Error(`Failed to update card: ${response.statusText}`);
         }
 
-        this.closeModal();
-        window.location.reload();
+        if (closeAfter) {
+          this.closeModal();
+          window.location.reload();
+        }
       } catch (error) {
         showError(error.message);
+        throw error;
       }
     },
   }));
@@ -363,7 +526,7 @@ document.addEventListener("alpine:init", () => {
         const response = await fetch(
           `/api/columns/${this.form.columnId}/cards`,
           {
-            method: "PUT",
+            method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
@@ -389,6 +552,39 @@ document.addEventListener("alpine:init", () => {
 
 // Helper functions
 
+// API functions for board operations
+async function fetchBoard() {
+  const response = await fetch("/api/board");
+  if (!response.ok) throw new Error("Failed to fetch board data");
+  return response.json();
+}
+
+async function fetchColumn(columnId) {
+  const response = await fetch(`/api/columns/${columnId}`);
+  if (!response.ok) throw new Error("Failed to fetch column data");
+  return response.json();
+}
+
+async function fetchCard(columnId, cardId) {
+  const response = await fetch(`/api/columns/${columnId}/cards/${cardId}`);
+  if (!response.ok) throw new Error("Failed to fetch card data");
+  return response.json();
+}
+
+async function deleteColumn(columnId) {
+  const response = await fetch(`/api/columns/${columnId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("Failed to delete column");
+}
+
+async function deleteCard(columnId, cardId) {
+  const response = await fetch(`/api/columns/${columnId}/cards/${cardId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("Failed to delete card");
+}
+
 function showError(message) {
   console.error(message);
 }
@@ -410,4 +606,29 @@ async function updateOrder(endpoint, data) {
     showError(error.message);
     window.location.reload();
   }
+}
+
+// Comment API functions
+async function createComment(columnId, cardId, text) {
+  const response = await fetch(
+    `/api/columns/${columnId}/cards/${cardId}/comments`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    }
+  );
+  if (!response.ok) throw new Error("Failed to create comment");
+}
+
+async function deleteComment(columnId, cardId, commentId) {
+  const response = await fetch(
+    `/api/columns/${columnId}/cards/${cardId}/comments/${commentId}`,
+    {
+      method: "DELETE",
+    }
+  );
+  if (!response.ok) throw new Error("Failed to delete comment");
 }
