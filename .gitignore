@@ -1,16 +1,30 @@
-# Binaries
-bangbang
+# Node
+node_modules/
+npm-debug.log*
+.npm-cache/
 
-# Build directory
+# Build outputs
+out/
 dist/
+*.vsix
 
-# IDE files
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 .idea/
-.vscode/
 
-# OS files
+# OS
 .DS_Store
-.aider*
-.bangbang.md
+Thumbs.db
+
+# Project specific
 .promptext.yml
+.aider*
 .clinerules
+
+# Local project files (not gitignored - we want these in repo as examples)
+# .bangbang.md
+# .bangbang-archive.md
