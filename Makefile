@@ -12,9 +12,12 @@ release: check-clean
 		exit 1; \
 	fi
 	@echo "Bumping extension version to $(VERSION)"
-	cd $(EXT_DIR) && npm version $(VERSION)
+	cd $(EXT_DIR) && npm version $(VERSION) --no-git-tag-version
+	git add $(EXT_DIR)/package.json $(EXT_DIR)/package-lock.json
+	git commit -m "Bump version to $(VERSION)"
+	git tag v$(VERSION)
 	@echo "Pushing commit and tag to $(REMOTE)"
-	git push $(REMOTE) HEAD
+	git push $(REMOTE) main
 	git push $(REMOTE) v$(VERSION)
 
 check-clean:
