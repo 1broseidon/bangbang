@@ -62,7 +62,22 @@ columns:
     -
         id: done
         title: Done
-        tasks: []
+        tasks:
+            -
+                id: task-ci-version
+                title: Align CI release tag with package version
+                description: Ensure CI release tag matches npm package version
+                priority: high
+            -
+                id: task-2
+                title: Bump VSCode extension to 0.4.2
+                description: Update package.json version to match release tag
+                priority: high
+            -
+                id: task-3
+                title: Sync package-lock version metadata
+                description: Ensure package-lock version updated to 0.4.2
+                priority: medium
 statsConfig:
     columns:
         - in-progress
