@@ -25,6 +25,21 @@ jobs:
           cache: 'npm'
           cache-dependency-path: vscode-extension/package-lock.json
       
+      - name: Verify and Get Version
+        id: package-version
+        working-directory: ./vscode-extension
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          
+          if [ "$VERSION" != "$TAG_VERSION" ]; then
+             echo "::error::Version mismatch! Tag: $TAG_VERSION, Package: $VERSION"
+             exit 1
+          fi
+          
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VSIX_FILE=bangbang-${VERSION}.vsix" >> $GITHUB_OUTPUT
+      
       - name: Install dependencies
         working-directory: ./vscode-extension
         run: npm ci
@@ -39,14 +54,6 @@ jobs:
       - name: Package VSIX
         working-directory: ./vscode-extension
         run: vsce package
-      
-      - name: Get version from package.json
-        id: package-version
-        working-directory: ./vscode-extension
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "VSIX_FILE=bangbang-${VERSION}.vsix" >> $GITHUB_OUTPUT
       
       - name: Upload VSIX to Release
         uses: softprops/action-gh-release@v1
