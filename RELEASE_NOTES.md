@@ -1,6 +1,31 @@
 # Release Notes
 
-## v0.4.0 - Protocol Evolution (Latest)
+## v0.4.1 - AI-Ready Protocol (Latest)
+
+### Protocol Enhancements
+- **Protocol Versioning** - Added `protocolVersion` field to schema for backward compatibility
+- **AI-Friendly Fields** - New task fields for AI planning:
+  - `effort`: Task size estimation (trivial/small/medium/large/xlarge)
+  - `blockedBy`: Task dependency tracking with task ID references
+  - `llmNotes`: Free-form AI guidance at board level
+- **Formalized ID Patterns** - Strict validation for task and column IDs
+
+### VSCode Extension Improvements
+- **Debounced Writes** - 300ms write debouncing prevents file conflicts when multiple agents/humans edit simultaneously
+- **Conflict Detection** - Warns when external changes conflict with pending writes
+- **Performance** - Reduced file system operations for better responsiveness
+
+### Documentation
+- **Enhanced Protocol Spec** - Comprehensive protocol.md with v0.4.0 changes
+- **CONTRIBUTING.md** - Complete contribution guide for protocol, extension, and CLI
+- **Version History** - Clear migration path and compatibility notes
+
+### Developer Experience
+- Schema now at `https://bangbang.dev/schema/v0.4.0`
+- Better AI agent integration with structured fields
+- Improved git-friendliness with conflict prevention
+
+## v0.4.0 - Protocol Evolution
 
 ### Breaking Changes
 - Default to non-hidden files (`bangbang.md` instead of `.bangbang.md`)

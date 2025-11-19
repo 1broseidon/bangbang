@@ -35,8 +35,10 @@ columns: [] # Array of task columns
 
 ```yaml
 ---
+protocolVersion: string # Version of protocol (e.g., "0.4.0")
 agent: # AI agent instructions (recommended)
   instructions: [] # Array of instruction strings
+  llmNotes: string # Free-form notes about AI work preferences
 rules: # Project rules and guidelines
   always: [] # Rules that must always be followed
   never: [] # Rules that must never be violated
@@ -97,6 +99,8 @@ While customizable, these IDs are conventional:
 description: string # Detailed description (markdown supported)
 assignee: string # Person responsible
 priority: string # low|medium|high|critical
+effort: string # trivial|small|medium|large|xlarge
+blockedBy: [] # Array of task IDs (e.g., ["task-1", "task-5"])
 dueDate: string # ISO 8601 date
 tags: [] # Array of tag strings
 relatedFiles: [] # Array of file paths
@@ -128,11 +132,19 @@ rules:
 
 ## Version Compatibility
 
-### v0.3.0+ Changes
+### v0.4.0 (Latest)
+
+- Added `protocolVersion` field for explicit versioning
+- Added AI-friendly task fields: `effort`, `blockedBy`
+- Added `llmNotes` field to agent block
+- Task IDs now enforce `task-N` pattern
+
+### v0.3.0
 
 - Default to non-hidden files (`bangbang.md`)
 - Added `agent` instruction block
 - Maintains backward compatibility with hidden files
+- Added subtasks support
 
 ### Migration Path
 
@@ -167,11 +179,13 @@ Use the JSON Schema ([bangbang.schema.json](../bangbang.schema.json)) to validat
 ```yaml
 ---
 title: My Project
+protocolVersion: "0.4.0"
 agent:
   instructions:
     - Modify only the YAML frontmatter
     - Preserve all IDs
     - Keep ordering
+  llmNotes: "Prefer functional patterns and comprehensive tests"
 rules:
   always:
     - id: 1
@@ -184,6 +198,8 @@ columns:
         title: Implement user authentication
         description: Add OAuth2 support
         priority: high
+        effort: large
+        blockedBy: []
         subtasks:
           - id: task-1-1
             title: Setup OAuth provider

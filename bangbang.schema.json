@@ -1,11 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://bangbang.dev/schema/v1",
+  "$id": "https://bangbang.dev/schema/v0.4.0",
   "title": "BangBang Task Description Language (TDL)",
   "description": "Schema for bangbang.md YAML frontmatter - a protocol for project task management",
   "type": "object",
   "required": ["title", "columns"],
   "properties": {
+    "protocolVersion": {
+      "type": "string",
+      "description": "Version of the BangBang protocol this file uses",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "default": "0.4.0"
+    },
     "title": {
       "type": "string",
       "description": "Project or board title",
@@ -22,6 +28,10 @@
             "type": "string",
             "minLength": 1
           }
+        },
+        "llmNotes": {
+          "type": "string",
+          "description": "Free-form notes about how this project prefers AI work to be structured"
         }
       },
       "additionalProperties": false
@@ -147,6 +157,19 @@
           "type": "string",
           "description": "Optional task priority",
           "enum": ["low", "medium", "high", "critical"]
+        },
+        "effort": {
+          "type": "string",
+          "description": "Optional effort estimation for AI planning",
+          "enum": ["trivial", "small", "medium", "large", "xlarge"]
+        },
+        "blockedBy": {
+          "type": "array",
+          "description": "Optional list of task IDs that block this task",
+          "items": {
+            "type": "string",
+            "pattern": "^task-[0-9]+$"
+          }
         },
         "dueDate": {
           "type": "string",

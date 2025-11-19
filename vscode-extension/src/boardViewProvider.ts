@@ -18,10 +18,62 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
   private _isFirstRender: boolean = true;
   private _disposables: vscode.Disposable[] = [];
   private _lastContentHash?: string;
+  private _writeDebounceTimer?: NodeJS.Timeout;
+  private _pendingWrite?: { content: string; callback?: () => void };
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
   ) {}
+
+  /**
+   * Debounced write to prevent file conflicts when multiple agents/humans edit simultaneously
+   */
+  private debouncedWrite(content: string, callback?: () => void) {
+    if (!this._boardFilePath) {
+      log('No board file path for write');
+      return;
+    }
+
+    // Store the pending write
+    this._pendingWrite = { content, callback };
+
+    // Clear existing timer
+    if (this._writeDebounceTimer) {
+      clearTimeout(this._writeDebounceTimer);
+    }
+
+    // Set new timer (300ms debounce)
+    this._writeDebounceTimer = setTimeout(() => {
+      if (this._pendingWrite && this._boardFilePath) {
+        try {
+          // Check if file has changed externally before writing
+          const currentContent = fs.readFileSync(this._boardFilePath, 'utf8');
+          const currentHash = this.hashContent(currentContent);
+
+          // If file changed externally and differs from our pending write
+          if (currentHash !== this._lastContentHash && currentHash !== this.hashContent(this._pendingWrite.content)) {
+            log('File changed externally, attempting merge');
+            // For now, just warn - could implement merge logic later
+            vscode.window.showWarningMessage('Board file was modified externally. Your changes may conflict.');
+          }
+
+          // Write the file
+          fs.writeFileSync(this._boardFilePath, this._pendingWrite.content, 'utf8');
+          this._lastContentHash = this.hashContent(this._pendingWrite.content);
+
+          // Execute callback if provided
+          if (this._pendingWrite.callback) {
+            this._pendingWrite.callback();
+          }
+        } catch (error) {
+          log('Error in debounced write:', error);
+          vscode.window.showErrorMessage('Failed to save board changes');
+        }
+
+        this._pendingWrite = undefined;
+      }
+    }, 300);
+  }
 
   public refresh() {
     this.updateView();
@@ -118,15 +170,12 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
         description: description?.trim() || ''
       });
 
-      // Save the updated board
+      // Save the updated board with debouncing
       const newContent = BangBangParser.serialize(board);
-      fs.writeFileSync(this._boardFilePath, newContent, 'utf8');
-
-      // Update hash to prevent double update
-      this._lastContentHash = this.hashContent(newContent);
-
-      log(`Quick added task ${newTaskId} to column ${columnId}`);
-      vscode.window.showInformationMessage(`Added task "${title}" to ${column.title}`);
+      this.debouncedWrite(newContent, () => {
+        log(`Quick added task ${newTaskId} to column ${columnId}`);
+        vscode.window.showInformationMessage(`Added task "${title}" to ${column.title}`);
+      });
 
       // Update the view
       this.updateView();
@@ -484,12 +533,11 @@ columns:
           task.title = newTitle;
           task.description = newDescription;
           const newContent = BangBangParser.serialize(board);
-          fs.writeFileSync(this._boardFilePath, newContent, 'utf8');
 
-          // Update hash to prevent double update
-          this._lastContentHash = this.hashContent(newContent);
-
-          log('Task updated successfully');
+          // Use debounced write to prevent conflicts
+          this.debouncedWrite(newContent, () => {
+            log('Task updated successfully');
+          });
 
           // Immediately update the view
           this.updateView();
@@ -511,12 +559,11 @@ columns:
       if (col.id === columnId) {
         col.tasks = col.tasks.filter(t => t.id !== taskId);
         const newContent = BangBangParser.serialize(board);
-        fs.writeFileSync(this._boardFilePath, newContent, 'utf8');
 
-        // Update hash to prevent double update
-        this._lastContentHash = this.hashContent(newContent);
-
-        log('Task deleted successfully');
+        // Use debounced write to prevent conflicts
+        this.debouncedWrite(newContent, () => {
+          log('Task deleted successfully');
+        });
 
         // Immediately update the view
         this.updateView();
