@@ -1,0 +1,19 @@
+0 verbose cli /home/george/.proto/tools/node/22.14.0/bin/node /home/george/.proto/tools/node/22.14.0/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.14.0
+3 silly config load:file:/home/george/.proto/tools/node/22.14.0/lib/node_modules/npm/npmrc
+4 silly config load:file:/home/george/Projects/core/bangbang/vscode-extension/.npmrc
+5 silly config load:file:/home/george/.npmrc
+6 silly config load:file:/home/george/.proto/tools/node/22.14.0/etc/npmrc
+7 verbose title npm exec vsce package --allow-missing-repository --no-yarn --no-dependencies --ignoreFile .vscodeignore
+8 verbose argv "exec" "--" "vsce" "package" "--allow-missing-repository" "--no-yarn" "--no-dependencies" "--ignoreFile" ".vscodeignore"
+9 verbose logfile logs-max:10 dir:/home/george/Projects/core/bangbang/vscode-extension/.npm-cache/_logs/2025-11-19T01_33_18_173Z-
+10 verbose logfile /home/george/Projects/core/bangbang/vscode-extension/.npm-cache/_logs/2025-11-19T01_33_18_173Z-debug-0.log
+11 silly logfile done cleaning log files
+12 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with ENOTFOUND
+13 verbose cwd /home/george/Projects/core/bangbang/vscode-extension
+14 verbose os Linux 6.14.0-35-generic
+15 verbose node v22.14.0
+16 verbose npm  v10.9.2
+17 verbose exit 0
+18 info ok

@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bangbang.dev/schema/v1",
+  "title": "BangBang Task Description Language (TDL)",
+  "description": "Schema for .bangbang.md YAML frontmatter - a protocol for project task management",
+  "type": "object",
+  "required": ["title", "columns"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Project or board title",
+      "minLength": 1
+    },
+    "rules": {
+      "type": "object",
+      "description": "Project rules organized by category",
+      "properties": {
+        "always": {
+          "type": "array",
+          "description": "Rules that must always be followed",
+          "items": {
+            "$ref": "#/definitions/rule"
+          }
+        },
+        "never": {
+          "type": "array",
+          "description": "Rules that must never be violated",
+          "items": {
+            "$ref": "#/definitions/rule"
+          }
+        },
+        "prefer": {
+          "type": "array",
+          "description": "Preferred approaches or patterns",
+          "items": {
+            "$ref": "#/definitions/rule"
+          }
+        },
+        "context": {
+          "type": "array",
+          "description": "Contextual information and constraints",
+          "items": {
+            "$ref": "#/definitions/rule"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "columns": {
+      "type": "array",
+      "description": "Task columns (e.g., To Do, In Progress, Done)",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/column"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "rule": {
+      "type": "object",
+      "required": ["id", "rule"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Unique identifier within the rule category",
+          "minimum": 1
+        },
+        "rule": {
+          "type": "string",
+          "description": "The rule text",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "column": {
+      "type": "object",
+      "required": ["id", "title", "tasks"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique column identifier in kebab-case (e.g., 'todo', 'in-progress')",
+          "pattern": "^[a-z]+(-[a-z]+)*$",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "description": "Display title for the column",
+          "minLength": 1
+        },
+        "tasks": {
+          "type": "array",
+          "description": "Tasks in this column",
+          "items": {
+            "$ref": "#/definitions/task"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "task": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique task identifier following pattern 'task-N'",
+          "pattern": "^task-[0-9]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Task title",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional detailed task description (supports Markdown)"
+        },
+        "assignee": {
+          "type": "string",
+          "description": "Optional task assignee"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Optional task tags",
+          "items": {
+            "type": "string"
+          }
+        },
+        "priority": {
+          "type": "string",
+          "description": "Optional task priority",
+          "enum": ["low", "medium", "high", "critical"]
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "Optional due date in ISO 8601 format",
+          "format": "date"
+        },
+        "relatedFiles": {
+          "type": "array",
+          "description": "Optional list of related file paths or code locations",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,82 +1,84 @@
-# 💥 BangBang
+# BangBang
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/1broseidon/bangbang)](https://goreportcard.com/report/github.com/1broseidon/bangbang)
-[![Go Reference](https://pkg.go.dev/badge/github.com/1broseidon/bangbang.svg)](https://pkg.go.dev/github.com/1broseidon/bangbang)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+A Task Description Language (TDL) for humans and AI agents.
 
-BangBang is a lightweight, portable Kanban board that lives in your project directory. It uses a single markdown file (`.bangbang.md`) to store your board's data, making it perfect for version control and easy sharing with your team.
+## What is BangBang?
 
-![Example Project](example_project.png)
+BangBang is a protocol, not an app. It's a simple YAML-based format for describing project tasks and rules in a single `.bangbang.md` file. The file is both human-readable and machine-parseable, making it ideal for version control, AI collaboration, and team coordination.
 
-## ✨ Features
+## The Protocol
 
-- 🚀 **Instant Setup**: Just run `bangbang` in any directory to create a new board
-- 📁 **Directory-Specific Boards**: Each directory can have its own `.bangbang.md` board
-- 🎯 **Markdown-Based**: All data stored in a simple, version-control friendly format
-- 🖥️ **Modern Web UI**: Drag-and-drop interface with mobile support
-- 🎨 **Responsive Design**: Works seamlessly on desktop and mobile devices
-- 🔄 **Real-time Updates**: Changes are instantly saved to the markdown file
-- 🌐 **Local Server**: Runs on `localhost`, no external dependencies needed
+A `.bangbang.md` file contains YAML frontmatter with three sections:
 
-## 🚀 Quick Start
+1. **title**: Project name
+2. **rules**: Project guidelines (always, never, prefer, context)
+3. **columns**: Task columns with tasks
 
-Install bangbang using the install script (recommended):
+Example:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/1broseidon/bangbang/main/scripts/install.sh | bash
+```yaml
+---
+title: My Project
+rules:
+  always:
+    - id: 1
+      rule: update task status as you work (todo → in-progress → done)
+  never:
+    - id: 1
+      rule: bypass YAML frontmatter structure
+  prefer:
+    - id: 1
+      rule: simple solutions over complex abstractions
+  context:
+    - id: 1
+      rule: task IDs follow pattern task-N
+columns:
+  - id: todo
+    title: To Do
+    tasks:
+      - id: task-1
+        title: Example task
+        description: Task description here
+  - id: done
+    title: Done
+    tasks: []
+---
 ```
 
-Or using Go (requires Go 1.23.4 or later):
+## Tooling
+
+### VSCode Extension (Primary)
+
+Install the extension directly:
 
 ```bash
-go install github.com/1broseidon/bangbang@latest
+code --install-extension vscode-extension/bangbang-0.1.0.vsix
 ```
 
-Run it:
+Features:
+- Kanban board view in VSCode sidebar
+- Drag-and-drop task management
+- Real-time updates (500ms polling)
+- Tab navigation (Tasks/Rules/Settings)
+- Collapsible columns
+- Rules display
 
-```bash
-# Run in any directory
-bangbang
+### Schema
 
-# Or specify a custom directory and port
-bangbang -d /path/to/project -p 8080
-```
+See [.bangbang.schema.json](.bangbang.schema.json) for the complete specification.
 
-## 💡 Usage
+## Philosophy
 
-1. Navigate to your project directory
-2. Run `bangbang`
-3. Open `http://localhost:9000` in your browser
-4. Start organizing your tasks!
+- **Protocol-first**: The `.bangbang.md` spec is the product
+- **Tool-agnostic**: Any tool can implement the protocol
+- **Version control native**: Plain text, git-friendly
+- **AI-native**: Designed for human-AI collaboration
+- **No lock-in**: Just markdown and YAML
 
-The board data is stored in `.bangbang.md` in your current directory. This file can be committed to version control, allowing you to track changes and share the board with your team.
+## Example
 
-## 🛠️ Development
+See [example/.bangbang.md](example/.bangbang.md) for a real-world example.
 
-```bash
-# Clone the repository
-git clone https://github.com/1broseidon/bangbang.git
+## License
 
-# Install dependencies
-go mod download
-
-# Run the server
-go run main.go
-```
-
-## 🎯 Why BangBang?
-
-- **Simple**: No databases, no cloud storage, just a markdown file
-- **Portable**: Run it anywhere Go is installed
-- **Version Control Friendly**: Track board changes in git
-- **Team Friendly**: Share boards via your existing version control
-- **Offline First**: Everything runs locally
-- **Privacy Focused**: Your data never leaves your machine
-
-## 📝 License
-
-MIT License - see the [LICENSE](LICENSE) file for details
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+MIT

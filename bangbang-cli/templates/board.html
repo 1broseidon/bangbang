@@ -1,15 +1,30 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>{{.Title}}</title>
+
+    <!-- Google Fonts - Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CSS - Order matters: lib, variables, typography, custom -->
     <link rel="stylesheet" href="/static/css/lib/pico.min.css" />
+    <link rel="stylesheet" href="/static/css/variables.css" />
+    <link rel="stylesheet" href="/static/css/typography.css" />
     <link rel="stylesheet" href="/static/css/style.css" />
+
+    <!-- JavaScript Libraries -->
     <script src="/static/js/lib/sortable.min.js"></script>
-    <script defer src="/static/js/lib/alpine.min.js" defer></script>
+    <script defer src="/static/js/lib/alpine.min.js"></script>
     <script src="/static/js/lib/marked.min.js"></script>
   </head>
   <body>
@@ -55,18 +70,28 @@
             data-index="{{$index}}"
           >
             <div class="column-header">
-              <h2>{{$column.Title}}</h2>
-              <button
-                class="icon-button"
-                @click="$dispatch('open-new-task-modal', { columnId: '{{$column.ID}}' })"
-                aria-label="Add new task"
-              >
-                <img
-                  src="/static/img/add-task.svg"
-                  alt="Add task"
-                  class="add-task-icon"
-                />
-              </button>
+              <div class="column-header-top">
+                <h2>
+                  <span class="column-title">{{$column.Title}}</span>
+                  <span class="task-count">({{len $column.Tasks}})</span>
+                </h2>
+                <button
+                  class="icon-button"
+                  @click="$dispatch('open-new-task-modal', { columnId: '{{$column.ID}}' })"
+                  aria-label="Add new task"
+                >
+                  <img
+                    src="/static/img/add-task.svg"
+                    alt="Add task"
+                    class="add-task-icon"
+                  />
+                </button>
+              </div>
+              {{if gt (len $column.Tasks) 0}}
+              <div class="column-progress">
+                <div class="column-progress-bar"></div>
+              </div>
+              {{end}}
             </div>
             <div class="desktop-card-list" data-column-id="{{$column.ID}}">
               {{range $cardIndex, $card := $column.Tasks}}
@@ -122,7 +147,10 @@
               'slide-out-left': $data.swipeDirection === 'left'
             }"
           >
-            <h2>{{$column.Title}}</h2>
+            <h2>
+              <span class="column-title">{{$column.Title}}</span>
+              <span class="task-count">({{len $column.Tasks}})</span>
+            </h2>
             <div class="mobile-card-list" data-column-id="{{$column.ID}}">
               {{range $cardIndex, $card := $column.Tasks}}
               <div class="mobile-card" data-card-id="{{$card.ID}}">

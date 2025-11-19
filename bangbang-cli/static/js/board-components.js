@@ -30,15 +30,16 @@ document.addEventListener("alpine:init", () => {
 
   // Theme toggle component
   Alpine.data("themeToggle", () => ({
-    isDark: false,
+    isDark: true, // Default to dark mode
 
     init() {
-      // Check for saved theme preference or system preference
+      // Check for saved theme preference or default to dark
       const savedTheme = localStorage.getItem("theme");
       if (savedTheme) {
         this.isDark = savedTheme === "dark";
       } else {
-        this.isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        // Default to dark mode (true black aesthetic)
+        this.isDark = true;
       }
 
       // Apply initial theme
