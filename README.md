@@ -64,7 +64,7 @@ columns:
 Download the latest release and install:
 
 ```bash
-code --install-extension bangbang-0.3.0.vsix
+code --install-extension bangbang-0.4.0.vsix
 ```
 
 Or install directly from the [releases page](https://github.com/1broseidon/bangbang/releases).
@@ -105,7 +105,7 @@ Traditional task management tools create silos between human planning and AI exe
 
 ### From Hidden to Non-Hidden Files
 
-Starting with v0.3.0, BangBang uses non-hidden files by default (`bangbang.md` instead of `.bangbang.md`). This improves:
+Starting with v0.4.0, BangBang uses non-hidden files by default (`bangbang.md` instead of `.bangbang.md`). This improves:
 - **Visibility**: Files are immediately visible in file explorers
 - **AI Compatibility**: Many AI agents have better access to non-hidden files
 - **Onboarding**: New developers can see the task board immediately
