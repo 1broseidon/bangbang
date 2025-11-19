@@ -52,14 +52,17 @@ columns:
 Install the extension directly:
 
 ```bash
-code --install-extension vscode-extension/bangbang-0.1.0.vsix
+code --install-extension vscode-extension/bangbang-0.3.0.vsix
 ```
 
 Features:
 - Kanban board view in VSCode sidebar
 - Drag-and-drop task management
-- Real-time updates (500ms polling)
-- Tab navigation (Tasks/Rules/Settings)
+- Real-time bidirectional sync with .bangbang.md
+- Quick Add Task (Cmd/Ctrl+Shift+T or + buttons)
+- Subtasks with visual progress tracking
+- Archive system for completed tasks
+- Tab navigation (Tasks/Rules/Archive/Settings)
 - Collapsible columns
 - Rules display
 

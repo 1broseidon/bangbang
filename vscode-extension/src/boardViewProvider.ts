@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { marked } from 'marked';
 import { BangBangParser } from './parser';
-import { Board } from './types';
+import { Board, Subtask } from './types';
 import { log } from './extension';
 
 export class BoardViewProvider implements vscode.WebviewViewProvider {
@@ -50,6 +50,87 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
 
     await this.createDefaultBangBangFile(bangbangPath);
     this.updateView();
+  }
+
+  public async quickAddTask() {
+    if (!this._boardFilePath) {
+      vscode.window.showErrorMessage('No BangBang board found');
+      return;
+    }
+
+    // Get column options
+    const content = fs.readFileSync(this._boardFilePath, 'utf8');
+    const board = BangBangParser.parse(content);
+    if (!board) {
+      vscode.window.showErrorMessage('Failed to parse board');
+      return;
+    }
+
+    // Quick input for task title
+    const title = await vscode.window.showInputBox({
+      prompt: 'Task title',
+      placeHolder: 'Enter task title',
+      validateInput: (value) => {
+        if (!value || value.trim().length === 0) {
+          return 'Task title is required';
+        }
+        return null;
+      }
+    });
+
+    if (!title) {
+      return;
+    }
+
+    // Quick pick for column selection
+    const columnOptions = board.columns.map(col => ({
+      label: col.title,
+      description: `${col.tasks.length} tasks`,
+      id: col.id
+    }));
+
+    const selectedColumn = await vscode.window.showQuickPick(columnOptions, {
+      placeHolder: 'Select column (default: To Do)',
+      canPickMany: false
+    });
+
+    const columnId = selectedColumn?.id || 'todo';
+
+    // Optional description
+    const description = await vscode.window.showInputBox({
+      prompt: 'Task description (optional)',
+      placeHolder: 'Enter task description (supports markdown)'
+    });
+
+    // Generate next task ID
+    const allTaskIds = board.columns.flatMap(col =>
+      col.tasks.map(t => parseInt(t.id.replace('task-', '')) || 0)
+    );
+    const maxId = Math.max(0, ...allTaskIds);
+    const newTaskId = `task-${maxId + 1}`;
+
+    // Add task to the selected column
+    const column = board.columns.find(col => col.id === columnId);
+    if (column) {
+      column.tasks.push({
+        id: newTaskId,
+        title: title.trim(),
+        description: description?.trim() || ''
+      });
+
+      // Save the updated board
+      const newContent = BangBangParser.serialize(board);
+      fs.writeFileSync(this._boardFilePath, newContent, 'utf8');
+
+      // Update hash to prevent double update
+      this._lastContentHash = this.hashContent(newContent);
+
+      log(`Quick added task ${newTaskId} to column ${columnId}`);
+      vscode.window.showInformationMessage(`Added task "${title}" to ${column.title}`);
+
+      // Update the view
+      this.updateView();
+    }
   }
 
   public resolveWebviewView(
@@ -100,6 +181,12 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'archiveTask':
           this.handleArchiveTask(data.columnId, data.taskId);
+          break;
+        case 'addTaskToColumn':
+          this.handleAddTaskToColumn(data.columnId);
+          break;
+        case 'toggleSubtask':
+          this.handleToggleSubtask(data.taskId, data.subtaskId);
           break;
       }
     });
@@ -338,6 +425,15 @@ columns:
 
       log('Board parsed successfully:', board.title, `(${board.columns.length} columns)`);
 
+      // Debug log for subtasks
+      board.columns.forEach(col => {
+        col.tasks.forEach(task => {
+          if (task.subtasks) {
+            log(`Task ${task.id} has ${task.subtasks.length} subtasks`);
+          }
+        });
+      });
+
       // On first load or forced refresh, set the full HTML
       if (this._isFirstRender || forceFullRefresh) {
         log('Setting initial HTML');
@@ -575,6 +671,101 @@ columns:
     }
   }
 
+  private async handleAddTaskToColumn(columnId: string) {
+    if (!this._boardFilePath) return;
+
+    // Show quick input for task title
+    const title = await vscode.window.showInputBox({
+      prompt: 'Task title',
+      placeHolder: 'Enter task title',
+      validateInput: (value) => {
+        if (!value || value.trim().length === 0) {
+          return 'Task title is required';
+        }
+        return null;
+      }
+    });
+
+    if (!title) return;
+
+    // Optional description
+    const description = await vscode.window.showInputBox({
+      prompt: 'Task description (optional)',
+      placeHolder: 'Enter task description (supports markdown)'
+    });
+
+    // Read current board
+    const content = fs.readFileSync(this._boardFilePath, 'utf8');
+    const board = BangBangParser.parse(content);
+    if (!board) return;
+
+    // Generate next task ID
+    const allTaskIds = board.columns.flatMap(col =>
+      col.tasks.map(t => parseInt(t.id.replace('task-', '')) || 0)
+    );
+    const maxId = Math.max(0, ...allTaskIds);
+    const newTaskId = `task-${maxId + 1}`;
+
+    // Add task to the specified column
+    const column = board.columns.find(col => col.id === columnId);
+    if (column) {
+      column.tasks.push({
+        id: newTaskId,
+        title: title.trim(),
+        description: description?.trim() || ''
+      });
+
+      // Save the updated board
+      const newContent = BangBangParser.serialize(board);
+      fs.writeFileSync(this._boardFilePath, newContent, 'utf8');
+
+      // Update hash to prevent double update
+      this._lastContentHash = this.hashContent(newContent);
+
+      log(`Added task ${newTaskId} to column ${columnId}`);
+      vscode.window.showInformationMessage(`Added task "${title}" to ${column.title}`);
+
+      // Update the view
+      this.updateView();
+    }
+  }
+
+  private handleToggleSubtask(taskId: string, subtaskId: string) {
+    if (!this._boardFilePath) return;
+
+    log(`Toggling subtask ${subtaskId} for task ${taskId}`);
+
+    // Read current board
+    const content = fs.readFileSync(this._boardFilePath, 'utf8');
+    const board = BangBangParser.parse(content);
+    if (!board) return;
+
+    // Find the task and subtask
+    for (const col of board.columns) {
+      const task = col.tasks.find(t => t.id === taskId);
+      if (task && task.subtasks) {
+        const subtask = task.subtasks.find(st => st.id === subtaskId);
+        if (subtask) {
+          // Toggle the completed state
+          subtask.completed = !subtask.completed;
+
+          // Save the updated board
+          const newContent = BangBangParser.serialize(board);
+          fs.writeFileSync(this._boardFilePath, newContent, 'utf8');
+
+          // Update hash to prevent double update
+          this._lastContentHash = this.hashContent(newContent);
+
+          log(`Subtask ${subtaskId} toggled to ${subtask.completed ? 'completed' : 'incomplete'}`);
+
+          // Update the view
+          this.updateView();
+          return;
+        }
+      }
+    }
+  }
+
   private handleArchiveTask(columnId: string, taskId: string) {
     if (!this._boardFilePath) return;
 
@@ -673,6 +864,17 @@ columns:
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
+  }
+
+  private getSubtaskProgress(subtasks: Subtask[]): number {
+    if (!subtasks || subtasks.length === 0) return 0;
+    const completed = subtasks.filter(st => st.completed).length;
+    return Math.round((completed / subtasks.length) * 100);
+  }
+
+  private getCompletedSubtaskCount(subtasks: Subtask[]): number {
+    if (!subtasks) return 0;
+    return subtasks.filter(st => st.completed).length;
   }
 
   private getTasksHtml(board: Board): string {
@@ -930,6 +1132,33 @@ columns:
       gap: 6px;
     }
 
+    .column-header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .add-task-btn {
+      background: transparent;
+      border: none;
+      color: var(--vscode-editor-foreground);
+      opacity: 0;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-size: 14px;
+      transition: opacity 0.15s;
+    }
+
+    .column-header:hover .add-task-btn {
+      opacity: 0.6;
+    }
+
+    .add-task-btn:hover {
+      opacity: 1 !important;
+      background: var(--vscode-toolbar-hoverBackground);
+    }
+
     .collapse-icon {
       font-size: 10px;
       opacity: 0.7;
@@ -1046,6 +1275,91 @@ columns:
 
     .task.expanded .task-description {
       display: block;
+    }
+
+    /* Subtasks styling */
+    .subtasks-container {
+      margin-top: 8px;
+      padding-left: 20px;
+      display: none;
+    }
+
+    .task.expanded .subtasks-container {
+      display: block;
+    }
+
+    .subtask-progress {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 10px;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    .subtask-progress-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--vscode-input-background);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .subtask-progress-fill {
+      height: 100%;
+      background: var(--vscode-progressBar-background);
+      transition: width 0.3s ease;
+    }
+
+    .subtask-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      opacity: 0.8;
+    }
+
+    .subtask-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .subtask-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 0;
+      font-size: 11px;
+      color: var(--vscode-editor-foreground);
+      opacity: 0.9;
+    }
+
+    .subtask-checkbox {
+      width: 12px;
+      height: 12px;
+      border: 1px solid var(--vscode-input-border);
+      border-radius: 2px;
+      background: var(--vscode-input-background);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .subtask-item.completed .subtask-checkbox {
+      background: var(--vscode-button-background);
+      border-color: var(--vscode-button-background);
+    }
+
+    .subtask-item.completed .subtask-checkbox::after {
+      content: '✓';
+      color: var(--vscode-button-foreground);
+      font-size: 9px;
+    }
+
+    .subtask-item.completed .subtask-title {
+      text-decoration: line-through;
+      opacity: 0.6;
     }
 
     /* Markdown styling in task descriptions */
@@ -1414,7 +1728,10 @@ columns:
             <span class="collapse-icon">▼</span>
             <span>${this.escapeHtml(col.title)}</span>
           </div>
-          <span class="task-count">${col.tasks.length}</span>
+          <div class="column-header-right">
+            <button class="add-task-btn" data-column-id="${col.id}" title="Add task to ${this.escapeHtml(col.title)}">+</button>
+            <span class="task-count">${col.tasks.length}</span>
+          </div>
         </div>
         ${col.tasks.length === 0
           ? '<div class="empty-state">No tasks</div>'
@@ -1433,7 +1750,25 @@ columns:
                   <button class="task-action delete" data-action="delete" title="Delete">×</button>
                 </div>
               </div>
-              <div class="task-description">${this.renderMarkdown(task.description)}</div>
+              <div class="task-description">${this.renderMarkdown(task.description || '')}</div>
+              ${task.subtasks && task.subtasks.length > 0 ? `
+                <div class="subtasks-container">
+                  <div class="subtask-progress">
+                    <div class="subtask-progress-bar">
+                      <div class="subtask-progress-fill" style="width: ${this.getSubtaskProgress(task.subtasks)}%"></div>
+                    </div>
+                    <span class="subtask-count">${this.getCompletedSubtaskCount(task.subtasks)}/${task.subtasks.length}</span>
+                  </div>
+                  <ul class="subtask-list">
+                    ${task.subtasks.map(subtask => `
+                      <li class="subtask-item ${subtask.completed ? 'completed' : ''}" data-task-id="${task.id}" data-subtask-id="${subtask.id}">
+                        <div class="subtask-checkbox"></div>
+                        <span class="subtask-title">${this.escapeHtml(subtask.title)}</span>
+                      </li>
+                    `).join('')}
+                  </ul>
+                </div>
+              ` : ''}
               ${task.relatedFiles && task.relatedFiles.length > 0 ? `
                 <div class="task-related-files">
                   ${task.relatedFiles.map(file => `
@@ -1578,10 +1913,24 @@ columns:
     // Task expansion
     document.querySelectorAll('.task').forEach(taskEl => {
       taskEl.addEventListener('click', (e) => {
-        if (e.target.closest('.task-action') || e.target.closest('.drag-handle') || e.target.closest('.related-file')) {
+        if (e.target.closest('.task-action') || e.target.closest('.drag-handle') || e.target.closest('.related-file') || e.target.closest('.subtask-item')) {
           return;
         }
         taskEl.classList.toggle('expanded');
+      });
+    });
+
+    // Subtask checkbox clicks
+    document.querySelectorAll('.subtask-item').forEach(subtaskEl => {
+      subtaskEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const taskId = subtaskEl.dataset.taskId;
+        const subtaskId = subtaskEl.dataset.subtaskId;
+        vscode.postMessage({
+          type: 'toggleSubtask',
+          taskId: taskId,
+          subtaskId: subtaskId
+        });
       });
     });
 
@@ -1759,9 +2108,25 @@ columns:
       });
     });
 
+    // Add task buttons
+    document.querySelectorAll('.add-task-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const columnId = btn.dataset.columnId;
+        vscode.postMessage({
+          type: 'addTaskToColumn',
+          columnId: columnId
+        });
+      });
+    });
+
     // Column collapse/expand
     document.querySelectorAll('.column-header').forEach(header => {
       header.addEventListener('click', (e) => {
+        // Don't collapse if clicking on add button
+        if (e.target.closest('.add-task-btn')) {
+          return;
+        }
         const columnSection = header.closest('.column-section');
         columnSection.classList.toggle('collapsed');
       });
@@ -1888,7 +2253,24 @@ columns:
       }
     });
 
+    function getSubtaskProgress(subtasks) {
+      if (!subtasks || subtasks.length === 0) return 0;
+      const completed = subtasks.filter(st => st.completed).length;
+      return Math.round((completed / subtasks.length) * 100);
+    }
+
+    function getCompletedSubtaskCount(subtasks) {
+      if (!subtasks) return 0;
+      return subtasks.filter(st => st.completed).length;
+    }
+
     function updateTabsContent(board, activeTab) {
+      // Store currently expanded tasks before updating
+      const expandedTasks = new Set();
+      document.querySelectorAll('.task.expanded').forEach(task => {
+        expandedTasks.add(task.dataset.taskId);
+      });
+
       // Update tasks tab
       const tasksTab = document.getElementById('tasksTab');
       tasksTab.innerHTML = \`
@@ -1922,7 +2304,10 @@ columns:
                 <span class="collapse-icon">▼</span>
                 <span>\${escapeHtml(col.title)}</span>
               </div>
-              <span class="task-count">\${col.tasks.length}</span>
+              <div class="column-header-right">
+                <button class="add-task-btn" data-column-id="\${col.id}" title="Add task to \${escapeHtml(col.title)}">+</button>
+                <span class="task-count">\${col.tasks.length}</span>
+              </div>
             </div>
             \${col.tasks.length === 0
               ? '<div class="empty-state">No tasks</div>'
@@ -1941,7 +2326,25 @@ columns:
                       <button class="task-action delete" data-action="delete" title="Delete">×</button>
                     </div>
                   </div>
-                  <div class="task-description">\${renderMarkdown(task.description)}</div>
+                  <div class="task-description">\${renderMarkdown(task.description || '')}</div>
+                  \${task.subtasks && task.subtasks.length > 0 ? \`
+                    <div class="subtasks-container">
+                      <div class="subtask-progress">
+                        <div class="subtask-progress-bar">
+                          <div class="subtask-progress-fill" style="width: \${getSubtaskProgress(task.subtasks)}%"></div>
+                        </div>
+                        <span class="subtask-count">\${getCompletedSubtaskCount(task.subtasks)}/\${task.subtasks.length}</span>
+                      </div>
+                      <ul class="subtask-list">
+                        \${task.subtasks.map(subtask => \`
+                          <li class="subtask-item \${subtask.completed ? 'completed' : ''}" data-task-id="\${task.id}" data-subtask-id="\${subtask.id}">
+                            <div class="subtask-checkbox"></div>
+                            <span class="subtask-title">\${escapeHtml(subtask.title)}</span>
+                          </li>
+                        \`).join('')}
+                      </ul>
+                    </div>
+                  \` : ''}
                   \${task.relatedFiles && task.relatedFiles.length > 0 ? \`
                     <div class="task-related-files">
                       \${task.relatedFiles.map(file => \`
@@ -2034,6 +2437,14 @@ columns:
 
       // Re-attach event listeners for tasks
       attachTaskEventListeners();
+
+      // Restore expanded state
+      expandedTasks.forEach(taskId => {
+        const taskEl = document.querySelector(\`.task[data-task-id="\${taskId}"]\`);
+        if (taskEl) {
+          taskEl.classList.add('expanded');
+        }
+      });
     }
 
     function calculateProgress(board) {
@@ -2072,10 +2483,24 @@ columns:
       // Re-attach all task-related event listeners
       document.querySelectorAll('.task').forEach(taskEl => {
         taskEl.addEventListener('click', (e) => {
-          if (e.target.closest('.task-action') || e.target.closest('.drag-handle') || e.target.closest('.related-file')) {
+          if (e.target.closest('.task-action') || e.target.closest('.drag-handle') || e.target.closest('.related-file') || e.target.closest('.subtask-item')) {
             return;
           }
           taskEl.classList.toggle('expanded');
+        });
+      });
+
+      // Re-attach subtask clicks
+      document.querySelectorAll('.subtask-item').forEach(subtaskEl => {
+        subtaskEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const taskId = subtaskEl.dataset.taskId;
+          const subtaskId = subtaskEl.dataset.subtaskId;
+          vscode.postMessage({
+            type: 'toggleSubtask',
+            taskId: taskId,
+            subtaskId: subtaskId
+          });
         });
       });
 
@@ -2141,9 +2566,25 @@ columns:
         });
       });
 
+      // Re-attach add task buttons
+      document.querySelectorAll('.add-task-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const columnId = btn.dataset.columnId;
+          vscode.postMessage({
+            type: 'addTaskToColumn',
+            columnId: columnId
+          });
+        });
+      });
+
       // Re-attach column collapse listeners
       document.querySelectorAll('.column-header').forEach(header => {
         header.addEventListener('click', (e) => {
+          // Don't collapse if clicking on add button
+          if (e.target.closest('.add-task-btn')) {
+            return;
+          }
           const columnSection = header.closest('.column-section');
           columnSection.classList.toggle('collapsed');
         });

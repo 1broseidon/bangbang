@@ -144,6 +144,39 @@
           "items": {
             "type": "string"
           }
+        },
+        "subtasks": {
+          "type": "array",
+          "description": "Optional list of subtasks for tracking granular progress",
+          "items": {
+            "$ref": "#/definitions/subtask"
+          }
+        },
+        "template": {
+          "type": "string",
+          "description": "Optional task template type",
+          "enum": ["bug", "feature", "refactor"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "subtask": {
+      "type": "object",
+      "required": ["id", "title", "completed"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique subtask identifier, typically 'task-N-M' pattern",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "description": "Subtask title",
+          "minLength": 1
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the subtask is completed"
         }
       },
       "additionalProperties": false

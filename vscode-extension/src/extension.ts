@@ -45,6 +45,16 @@ export function activate(context: vscode.ExtensionContext) {
       })
     );
 
+    context.subscriptions.push(
+      vscode.commands.registerCommand('bangbang.addTask', () => {
+        log('Quick adding task');
+        provider.quickAddTask();
+      })
+    );
+
+    // Set context for keybinding
+    vscode.commands.executeCommand('setContext', 'bangbang.boardActive', true);
+
     log('All providers and commands registered');
   } catch (error) {
     log('Error activating extension:', error);

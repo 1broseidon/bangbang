@@ -10,15 +10,23 @@ export interface Rules {
   context?: Rule[];
 }
 
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   relatedFiles?: string[];
   assignee?: string;
   tags?: string[];
   priority?: 'low' | 'medium' | 'high' | 'critical';
   dueDate?: string;
+  subtasks?: Subtask[];
+  template?: 'bug' | 'feature' | 'refactor';
 }
 
 export interface Column {
