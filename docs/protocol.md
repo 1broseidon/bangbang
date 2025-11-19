@@ -11,6 +11,7 @@ BangBang is a protocol for task management designed specifically for AI-assisted
 The protocol uses a Markdown file with YAML frontmatter. The default filename is `bangbang.md` (non-hidden), though `.bangbang.md` (hidden) is supported for backward compatibility.
 
 **Priority Order** (when multiple files exist):
+
 1. `bangbang.md` (preferred)
 2. `.bangbang.md` (backward compatibility)
 3. `.bb.md` (shorthand, deprecated)
@@ -25,8 +26,8 @@ Completed tasks can be archived to `bangbang-archive.md` (or `.bangbang-archive.
 
 ```yaml
 ---
-title: string        # Project or board title
-columns: []          # Array of task columns
+title: string # Project or board title
+columns: [] # Array of task columns
 ---
 ```
 
@@ -34,14 +35,14 @@ columns: []          # Array of task columns
 
 ```yaml
 ---
-agent:               # AI agent instructions (recommended)
-  instructions: []   # Array of instruction strings
-rules:               # Project rules and guidelines
-  always: []         # Rules that must always be followed
-  never: []          # Rules that must never be violated
-  prefer: []         # Preferred approaches
-  context: []        # Contextual information
-archive: []          # Archived tasks (usually in separate file)
+agent: # AI agent instructions (recommended)
+  instructions: [] # Array of instruction strings
+rules: # Project rules and guidelines
+  always: [] # Rules that must always be followed
+  never: [] # Rules that must never be violated
+  prefer: [] # Preferred approaches
+  context: [] # Contextual information
+archive: [] # Archived tasks (usually in separate file)
 ---
 ```
 
@@ -67,14 +68,15 @@ Each column represents a workflow state:
 
 ```yaml
 columns:
-  - id: string       # Unique identifier (kebab-case)
-    title: string    # Display title
-    tasks: []        # Array of tasks
+  - id: string # Unique identifier (kebab-case)
+    title: string # Display title
+    tasks: [] # Array of tasks
 ```
 
 ### Standard Column IDs
 
 While customizable, these IDs are conventional:
+
 - `todo` - Tasks to be started
 - `in-progress` - Tasks being worked on
 - `review` - Tasks pending review
@@ -85,21 +87,21 @@ While customizable, these IDs are conventional:
 ### Required Task Fields
 
 ```yaml
-- id: string         # Unique identifier (pattern: task-N)
-  title: string      # Task title
+- id: string # Unique identifier (pattern: task-N)
+  title: string # Task title
 ```
 
 ### Optional Task Fields
 
 ```yaml
-  description: string      # Detailed description (markdown supported)
-  assignee: string        # Person responsible
-  priority: string        # low|medium|high|critical
-  dueDate: string        # ISO 8601 date
-  tags: []               # Array of tag strings
-  relatedFiles: []       # Array of file paths
-  subtasks: []           # Array of subtasks
-  template: string       # bug|feature|refactor
+description: string # Detailed description (markdown supported)
+assignee: string # Person responsible
+priority: string # low|medium|high|critical
+dueDate: string # ISO 8601 date
+tags: [] # Array of tag strings
+relatedFiles: [] # Array of file paths
+subtasks: [] # Array of subtasks
+template: string # bug|feature|refactor
 ```
 
 ## Subtask Structure
@@ -108,9 +110,9 @@ Subtasks track granular progress within a task:
 
 ```yaml
 subtasks:
-  - id: string           # Pattern: task-N-M
-    title: string        # Subtask title
-    completed: boolean   # Completion status
+  - id: string # Pattern: task-N-M
+    title: string # Subtask title
+    completed: boolean # Completion status
 ```
 
 ## Rule Structure
@@ -121,17 +123,19 @@ Rules guide project behavior:
 rules:
   always:
     - id: number
-      rule: string       # Rule description
+      rule: string # Rule description
 ```
 
 ## Version Compatibility
 
 ### v0.3.0+ Changes
+
 - Default to non-hidden files (`bangbang.md`)
 - Added `agent` instruction block
 - Maintains backward compatibility with hidden files
 
 ### Migration Path
+
 1. Projects can use either hidden or non-hidden files
 2. Tools should check for both variants
 3. Non-hidden files take priority when both exist
@@ -156,7 +160,7 @@ Tools implementing the protocol should:
 
 ## Validation
 
-Use the JSON Schema ([.bangbang.schema.json](../.bangbang.schema.json)) to validate YAML structure.
+Use the JSON Schema ([bangbang.schema.json](../bangbang.schema.json)) to validate YAML structure.
 
 ## Example
 

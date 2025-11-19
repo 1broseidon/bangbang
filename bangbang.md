@@ -88,4 +88,21 @@ columns:
                         id: task-43-4
                         title: Validate YAML serialization with subtasks
                         completed: true
+            -
+                id: task-44
+                title: Protocol v0.4.0 Testing
+                description: Verify all non-hidden files work correctly with the VSCode extension
+                subtasks:
+                    -
+                        id: task-44-1
+                        title: Test file discovery priority
+                        completed: true
+                    -
+                        id: task-44-2
+                        title: Verify agent instructions work
+                        completed: true
+                    -
+                        id: task-44-3
+                        title: Confirm backward compatibility
+                        completed: true
 ---

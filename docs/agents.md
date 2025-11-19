@@ -160,7 +160,7 @@ The VSCode extension watches for file changes in real-time. AI agents should:
    - Never reuse deleted IDs
 
 3. **Schema Violations**
-   - Validate against `.bangbang.schema.json`
+   - Validate against `bangbang.schema.json`
    - Preserve backward compatibility
    - Report unknown fields as warnings, not errors
 
@@ -183,7 +183,7 @@ def check_compliance(board):
             all_ids.add(task['id'])
 
     # Validate against schema
-    validate_against_schema(board, '.bangbang.schema.json')
+    validate_against_schema(board, 'bangbang.schema.json')
 ```
 
 ## README Integration

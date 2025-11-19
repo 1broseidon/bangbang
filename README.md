@@ -72,6 +72,7 @@ Or install directly from the [releases page](https://github.com/1broseidon/bangb
 ## Features
 
 ### 🎯 AI-First Design
+
 - **Protocol-based**: The `bangbang.md` file is the source of truth
 - **Human-readable**: Simple YAML that's easy to edit directly
 - **AI-compatible**: Designed for AI agents to read and modify
@@ -79,6 +80,7 @@ Or install directly from the [releases page](https://github.com/1broseidon/bangb
 - **Agent instructions**: Optional guidance to ensure consistent AI behavior
 
 ### 🚀 VSCode Integration
+
 - **Real-time sync**: Changes to `bangbang.md` instantly update the UI
 - **Backward compatible**: Works with both `bangbang.md` and `.bangbang.md` files
 - **Drag-and-drop**: Visual task management with kanban boards
@@ -87,6 +89,7 @@ Or install directly from the [releases page](https://github.com/1broseidon/bangb
 - **Archive system**: Keep completed tasks for reference
 
 ### 🎨 Modern UX
+
 - **True-black theme**: Designed for modern OLED displays
 - **Minimalist design**: Focus on content, not chrome
 - **Collapsible sections**: Organize your workspace
@@ -106,6 +109,7 @@ Traditional task management tools create silos between human planning and AI exe
 ### From Hidden to Non-Hidden Files
 
 Starting with v0.4.0, BangBang uses non-hidden files by default (`bangbang.md` instead of `.bangbang.md`). This improves:
+
 - **Visibility**: Files are immediately visible in file explorers
 - **AI Compatibility**: Many AI agents have better access to non-hidden files
 - **Onboarding**: New developers can see the task board immediately
@@ -113,6 +117,7 @@ Starting with v0.4.0, BangBang uses non-hidden files by default (`bangbang.md` i
 #### How to Migrate
 
 1. **Rename your files** (optional):
+
    ```bash
    mv .bangbang.md bangbang.md
    mv .bangbang-archive.md bangbang-archive.md
@@ -128,7 +133,7 @@ Starting with v0.4.0, BangBang uses non-hidden files by default (`bangbang.md` i
 
 ## Schema
 
-The complete protocol specification: [.bangbang.schema.json](.bangbang.schema.json)
+The complete protocol specification: [bangbang.schema.json](bangbang.schema.json)
 
 ## Example
 
@@ -137,6 +142,7 @@ Check out a real project using BangBang: [example/bangbang.md](example/bangbang.
 ## Contributing
 
 BangBang is a protocol, not a product. We welcome:
+
 - Tools that implement the protocol
 - Improvements to the schema
 - Documentation and examples
