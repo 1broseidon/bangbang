@@ -35,8 +35,13 @@ export interface Column {
   tasks: Task[];
 }
 
+export interface AgentInstructions {
+  instructions: string[];
+}
+
 export interface Board {
   title: string;
+  agent?: AgentInstructions;
   rules?: Rules;
   columns: Column[];
   archive?: Task[];

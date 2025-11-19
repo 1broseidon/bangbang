@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://bangbang.dev/schema/v1",
   "title": "BangBang Task Description Language (TDL)",
-  "description": "Schema for .bangbang.md YAML frontmatter - a protocol for project task management",
+  "description": "Schema for bangbang.md YAML frontmatter - a protocol for project task management",
   "type": "object",
   "required": ["title", "columns"],
   "properties": {
@@ -10,6 +10,21 @@
       "type": "string",
       "description": "Project or board title",
       "minLength": 1
+    },
+    "agent": {
+      "type": "object",
+      "description": "Instructions for AI agents interacting with the board",
+      "properties": {
+        "instructions": {
+          "type": "array",
+          "description": "List of instructions for agents",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
     },
     "rules": {
       "type": "object",

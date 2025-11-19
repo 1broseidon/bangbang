@@ -200,28 +200,42 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
 
     const rootPath = workspaceFolders[0].uri.fsPath;
 
-    // Check for .bangbang.md first (official/explicit)
-    const bangbangPath = path.join(rootPath, '.bangbang.md');
-    if (fs.existsSync(bangbangPath)) {
-      this._boardFilePath = bangbangPath;
+    // Check for non-hidden bangbang.md first (new default)
+    const nonHiddenPath = path.join(rootPath, 'bangbang.md');
+    if (fs.existsSync(nonHiddenPath)) {
+      this._boardFilePath = nonHiddenPath;
       return;
     }
 
-    // Then check for .bb.md (shorthand)
+    // Check for hidden .bangbang.md (backward compatibility)
+    const hiddenPath = path.join(rootPath, '.bangbang.md');
+    if (fs.existsSync(hiddenPath)) {
+      this._boardFilePath = hiddenPath;
+      return;
+    }
+
+    // Check for .bb.md (shorthand - backward compatibility)
     const bbPath = path.join(rootPath, '.bb.md');
     if (fs.existsSync(bbPath)) {
       this._boardFilePath = bbPath;
       return;
     }
 
-    // If no file exists, create default .bangbang.md
-    await this.createDefaultBangBangFile(bangbangPath);
+    // If no file exists, create default bangbang.md (non-hidden)
+    await this.createDefaultBangBangFile(nonHiddenPath);
   }
 
   private async createDefaultBangBangFile(filePath: string) {
     try {
       const defaultContent = `---
 title: My Project
+agent:
+  instructions:
+    - Modify only the YAML frontmatter
+    - Preserve all IDs
+    - Keep ordering
+    - Make minimal changes
+    - Preserve unknown fields
 rules:
   always: []
   never: []
@@ -243,11 +257,13 @@ columns:
       fs.writeFileSync(filePath, defaultContent, 'utf8');
       this._boardFilePath = filePath;
 
-      log('Created default .bangbang.md file');
-      vscode.window.showInformationMessage('Created .bangbang.md with starter template');
+      const fileName = path.basename(filePath);
+      log(`Created default ${fileName} file`);
+      vscode.window.showInformationMessage(`Created ${fileName} with starter template`);
     } catch (error) {
-      log('Error creating default .bangbang.md:', error);
-      vscode.window.showErrorMessage('Failed to create .bangbang.md file');
+      const fileName = path.basename(filePath);
+      log(`Error creating default ${fileName}:`, error);
+      vscode.window.showErrorMessage(`Failed to create ${fileName} file`);
     }
   }
 

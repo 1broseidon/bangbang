@@ -15,6 +15,7 @@
     "Other"
   ],
   "activationEvents": [
+    "workspaceContains:**/bangbang.md",
     "workspaceContains:**/.bangbang.md"
   ],
   "main": "./out/extension.js",
