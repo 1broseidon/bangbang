@@ -39,10 +39,15 @@ export interface AgentInstructions {
   instructions: string[];
 }
 
+export interface StatsConfig {
+  columns?: string[];  // Column IDs to display in stats (max 4)
+}
+
 export interface Board {
   title: string;
   agent?: AgentInstructions;
   rules?: Rules;
+  statsConfig?: StatsConfig;
   columns: Column[];
   archive?: Task[];
 }

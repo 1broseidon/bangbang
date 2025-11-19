@@ -197,6 +197,23 @@ When proposing protocol changes, consider:
 4. **Tooling Impact**: Changes needed in tools
 5. **AI Compatibility**: How agents will use the feature
 
+## Release Process
+
+Releases are automated via GitHub Actions. To create a new release:
+
+1. **Update Version**: Bump version in `vscode-extension/package.json`
+2. **Commit Changes**: Commit version bump with message like `chore: bump version to 0.4.2`
+3. **Create Tag**: `git tag v0.4.2 && git push origin v0.4.2`
+4. **GitHub Actions**: The workflow automatically:
+   - Installs dependencies
+   - Compiles TypeScript
+   - Packages VSIX file
+   - Attaches VSIX to the GitHub Release
+
+Alternatively, create a release directly on GitHub, and the workflow will build and attach the VSIX.
+
+> **Note**: VSIX files should never be committed to the repository. They are build artifacts generated during the release process.
+
 ## Getting Help
 
 - **Discord**: [Join our community](https://discord.gg/bangbang) (if available)

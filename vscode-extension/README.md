@@ -4,7 +4,7 @@ Task management protocol for AI-assisted development.
 
 ## Features
 
-- View and manage tasks from `.bangbang.md` files
+- View and manage tasks from `bangbang.md` files
 - Organize tasks in customizable columns
 - Define project rules (always, never, prefer, context)
 - Drag and drop tasks between columns
@@ -14,7 +14,7 @@ Task management protocol for AI-assisted development.
 
 ## Usage
 
-1. Create a `.bangbang.md` file in your project root
+1. Create a `bangbang.md` file in your project root
 2. Open the folder in VSCode
 3. The BangBang sidebar will appear automatically
 4. View and manage your tasks

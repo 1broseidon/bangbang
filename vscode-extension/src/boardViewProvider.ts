@@ -87,12 +87,12 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
     }
 
     const rootPath = workspaceFolders[0].uri.fsPath;
-    const bangbangPath = path.join(rootPath, '.bangbang.md');
+    const bangbangPath = path.join(rootPath, 'bangbang.md');
 
     // Check if file already exists
     if (fs.existsSync(bangbangPath)) {
       const answer = await vscode.window.showWarningMessage(
-        '.bangbang.md already exists. Overwrite?',
+        'bangbang.md already exists. Overwrite?',
         'Yes', 'No'
       );
       if (answer !== 'Yes') {
@@ -199,7 +199,7 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri]
     };
 
-    // Find .bangbang.md file
+    // Find bangbang.md file
     this.findBangBangFile().then(() => {
       log('Board file found:', this._boardFilePath);
       this.updateView();
@@ -212,6 +212,9 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
       switch (data.type) {
         case 'updateTask':
           this.handleUpdateTask(data.columnId, data.taskId, data.title, data.description);
+          break;
+        case 'editTask':
+          this.handleEditTask(data.taskId);
           break;
         case 'deleteTask':
           this.handleDeleteTask(data.columnId, data.taskId);
@@ -236,6 +239,9 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'toggleSubtask':
           this.handleToggleSubtask(data.taskId, data.subtaskId);
+          break;
+        case 'saveStatsConfig':
+          this.handleSaveStatsConfig(data.columns);
           break;
       }
     });
@@ -479,7 +485,7 @@ columns:
 
       if (!board) {
         log('Failed to parse board file');
-        this._view.webview.html = this.getErrorHtml('Failed to parse .bangbang.md');
+        this._view.webview.html = this.getErrorHtml('Failed to parse bangbang.md');
         return;
       }
 
@@ -635,6 +641,166 @@ columns:
     this.updateView();
   }
 
+  private async handleEditTask(taskId: string) {
+    if (!this._boardFilePath) return;
+
+    try {
+      log(`Opening task ${taskId} in editor`);
+
+      // Import BangBangParser at the top if not already imported
+      const { BangBangParser } = await import('./parser');
+
+      // Read the file content
+      const content = fs.readFileSync(this._boardFilePath, 'utf8');
+
+      // Find the task location
+      const location = BangBangParser.findTaskLocation(content, taskId);
+
+      if (!location) {
+        vscode.window.showErrorMessage(`Could not find task ${taskId} in file`);
+        return;
+      }
+
+      // Check if the document is already open in a visible editor
+      const uri = vscode.Uri.file(this._boardFilePath);
+      let editor = vscode.window.visibleTextEditors.find(
+        editor => editor.document.uri.toString() === uri.toString()
+      );
+
+      if (editor) {
+        // Document is already open, just focus it and move cursor
+        const position = new vscode.Position(location.line - 1, location.column);
+        const range = new vscode.Range(position, position);
+
+        editor.selection = new vscode.Selection(position, position);
+        editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+
+        // Focus the existing editor
+        await vscode.window.showTextDocument(editor.document, {
+          viewColumn: editor.viewColumn,
+          preserveFocus: false
+        });
+      } else {
+        // Document is not open, open it in a new editor
+        const document = await vscode.workspace.openTextDocument(uri);
+        const position = new vscode.Position(location.line - 1, location.column);
+        const range = new vscode.Range(position, position);
+
+        editor = await vscode.window.showTextDocument(document, {
+          selection: range,
+          viewColumn: vscode.ViewColumn.Beside, // Open beside the webview
+          preserveFocus: false // Give focus to the editor
+        });
+      }
+
+      // Highlight the task temporarily
+      if (editor) {
+        await this.highlightTask(editor, taskId, content);
+      }
+
+      log(`Opened editor at line ${location.line} for task ${taskId}`);
+    } catch (error) {
+      log('Error opening task in editor:', error);
+      vscode.window.showErrorMessage('Failed to open task in editor');
+    }
+  }
+
+  private async highlightTask(editor: vscode.TextEditor, taskId: string, content: string) {
+    // Create a decoration type for highlighting
+    const highlightDecoration = vscode.window.createTextEditorDecorationType({
+      backgroundColor: 'rgba(255, 235, 59, 0.3)', // Yellow highlight
+      border: '1px solid rgba(255, 235, 59, 0.5)',
+      borderRadius: '2px',
+      overviewRulerColor: 'rgba(255, 235, 59, 0.8)',
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
+    });
+
+    // Find the task's full range (from task start to next task or end of tasks array)
+    const lines = content.split('\n');
+    const ranges: vscode.Range[] = [];
+
+    let taskStartLine = -1;
+    let taskEndLine = -1;
+    let foundTask = false;
+    let indentLevel = -1;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      if (line.includes(`id: ${taskId}`)) {
+        // Found our task
+        foundTask = true;
+
+        // Check if this line starts with a dash (compact format)
+        if (line.match(/^\s*-\s+id:/)) {
+          taskStartLine = i;
+          indentLevel = line.match(/^(\s*)/)?.[1].length || 0;
+        } else if (i > 0 && lines[i - 1].match(/^\s*-\s*$/)) {
+          // Dash on previous line (expanded format)
+          taskStartLine = i - 1;
+          indentLevel = lines[i - 1].match(/^(\s*)/)?.[1].length || 0;
+        } else {
+          taskStartLine = i;
+          indentLevel = line.match(/^(\s*)/)?.[1].length || 0;
+        }
+      } else if (foundTask) {
+        // Check if we've reached the next task or end of this task's properties
+        const currentIndent = line.match(/^(\s*)/)?.[1].length || 0;
+
+        // If we find another task dash at the same or lower indent level, we're done
+        if (line.match(/^\s*-\s/) && currentIndent <= indentLevel) {
+          taskEndLine = i - 1;
+          break;
+        }
+
+        // If we've gone to a lower indent level (not counting empty lines), we're done
+        if (line.trim() && currentIndent <= indentLevel) {
+          taskEndLine = i - 1;
+          break;
+        }
+      }
+    }
+
+    // If we didn't find an end, highlight to the end of the found content
+    if (foundTask && taskEndLine === -1) {
+      // Find the last non-empty line that belongs to this task
+      for (let i = taskStartLine + 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+
+        const currentIndent = line.match(/^(\s*)/)?.[1].length || 0;
+        if (currentIndent > indentLevel) {
+          taskEndLine = i;
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (taskStartLine !== -1 && taskEndLine !== -1) {
+      const range = new vscode.Range(
+        new vscode.Position(taskStartLine, 0),
+        new vscode.Position(taskEndLine, lines[taskEndLine].length)
+      );
+      ranges.push(range);
+    } else if (taskStartLine !== -1) {
+      // Just highlight the single line if we couldn't find the end
+      const range = new vscode.Range(
+        new vscode.Position(taskStartLine, 0),
+        new vscode.Position(taskStartLine, lines[taskStartLine].length)
+      );
+      ranges.push(range);
+    }
+
+    // Apply the decoration
+    editor.setDecorations(highlightDecoration, ranges);
+
+    // Remove the highlight after 3 seconds
+    setTimeout(() => {
+      highlightDecoration.dispose();
+    }, 3000);
+  }
+
   private async handleOpenFile(filePath: string) {
     try {
       log(`Opening file: ${filePath}`);
@@ -690,6 +856,45 @@ columns:
     } catch (error) {
       log('Error clearing cache:', error);
       vscode.window.showErrorMessage('Failed to clear cache');
+    }
+  }
+
+  private handleSaveStatsConfig(columns: string[]) {
+    if (!this._boardFilePath) return;
+
+    try {
+      log(`Saving stats config with columns: ${columns.join(', ')}`);
+
+      const content = fs.readFileSync(this._boardFilePath, 'utf8');
+      const board = BangBangParser.parse(content);
+      if (!board) return;
+
+      // Update or create statsConfig
+      if (columns.length > 0) {
+        board.statsConfig = {
+          columns: columns.slice(0, 4) // Max 4 columns
+        };
+      } else {
+        // Remove statsConfig if no columns selected (use default)
+        delete board.statsConfig;
+      }
+
+      const newContent = BangBangParser.serialize(board);
+      fs.writeFileSync(this._boardFilePath, newContent, 'utf8');
+
+      // Update hash to prevent double update
+      this._lastContentHash = this.hashContent(newContent);
+
+      log('Stats config saved successfully');
+
+      // Show success message
+      vscode.window.showInformationMessage('Stats configuration saved successfully');
+
+      // Immediately update the view
+      this.updateView();
+    } catch (error) {
+      log('Error saving stats config:', error);
+      vscode.window.showErrorMessage('Failed to save stats configuration');
     }
   }
 
@@ -940,12 +1145,72 @@ columns:
     return subtasks.filter(st => st.completed).length;
   }
 
+  private getStatsHtml(board: Board, totalTasks: number): string {
+    // Check if custom stat columns are configured
+    if (board.statsConfig?.columns && board.statsConfig.columns.length > 0) {
+      // Use configured columns (max 4)
+      const statColumns = board.statsConfig.columns.slice(0, 4);
+      return statColumns.map(columnId => {
+        const column = board.columns.find(col => col.id === columnId);
+        if (column) {
+          return `
+            <div class="stat">
+              <div class="stat-value">${column.tasks.length}</div>
+              <div class="stat-label">${this.escapeHtml(column.title)}</div>
+            </div>
+          `;
+        }
+        return '';
+      }).join('');
+    } else {
+      // Default: Total and Done
+      const doneColumn = board.columns.find(col => col.id === 'done');
+      const doneTasks = doneColumn ? doneColumn.tasks.length : 0;
+      return `
+        <div class="stat">
+          <div class="stat-value">${totalTasks}</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">${doneTasks}</div>
+          <div class="stat-label">Done</div>
+        </div>
+      `;
+    }
+  }
+
   private getTasksHtml(board: Board): string {
     // Calculate progress metrics
     const totalTasks = board.columns.reduce((sum, col) => sum + col.tasks.length, 0);
     const doneColumn = board.columns.find(col => col.id === 'done');
     const doneTasks = doneColumn ? doneColumn.tasks.length : 0;
     const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
+    // Extract unique filter values from all tasks
+    const allTasks = board.columns.flatMap(col => col.tasks);
+    const uniqueTags = new Set<string>();
+    const uniqueAssignees = new Set<string>();
+    const uniquePriorities = new Set<string>();
+
+    allTasks.forEach(task => {
+      if (task.tags) {
+        task.tags.forEach(tag => uniqueTags.add(tag));
+      }
+      if (task.assignee) {
+        uniqueAssignees.add(task.assignee);
+      }
+      if (task.priority) {
+        uniquePriorities.add(task.priority);
+      }
+    });
+
+    // Sort the unique values
+    const sortedTags = Array.from(uniqueTags).sort();
+    const sortedAssignees = Array.from(uniqueAssignees).sort();
+    const priorityOrder = ['critical', 'high', 'medium', 'low'];
+    const sortedPriorities = Array.from(uniquePriorities).sort((a, b) => {
+      return priorityOrder.indexOf(a) - priorityOrder.indexOf(b);
+    });
 
     // Generate nonce for CSP
     const nonce = this.getNonce();
@@ -987,6 +1252,129 @@ columns:
       margin-bottom: 12px;
       padding: 0 4px;
       position: relative;
+    }
+
+    /* Search Section Styles */
+    .search-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--vscode-panel-border);
+      background: var(--vscode-sideBarSectionHeader-background);
+    }
+
+    .search-container {
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 6px 32px 6px 10px;
+      background: var(--vscode-editor-background);
+      border: 1px solid var(--vscode-input-border);
+      border-radius: 4px;
+      color: var(--vscode-input-foreground);
+      font-size: 12px;
+      font-family: var(--vscode-font-family);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--vscode-focusBorder);
+    }
+
+    .search-input::placeholder {
+      color: var(--vscode-input-placeholderForeground);
+      opacity: 0.8;
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--vscode-descriptionForeground);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 14px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .search-clear:hover {
+      opacity: 1;
+    }
+
+
+    /* Hidden task state for filtering */
+    .task.filtered-out {
+      display: none !important;
+    }
+
+    .column-section.all-filtered .empty-state {
+      display: block !important;
+    }
+
+    .column-section.all-filtered .empty-state::after {
+      content: " (filtered)";
+      opacity: 0.6;
+    }
+
+    /* Task metadata styles */
+    .task-metadata {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 10px;
+    }
+
+    .task-priority {
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .task-priority.priority-critical {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .task-priority.priority-high {
+      background: rgba(251, 146, 60, 0.2);
+      color: #fb923c;
+      border: 1px solid rgba(251, 146, 60, 0.3);
+    }
+
+    .task-priority.priority-medium {
+      background: rgba(250, 204, 21, 0.2);
+      color: #facc15;
+      border: 1px solid rgba(250, 204, 21, 0.3);
+    }
+
+    .task-priority.priority-low {
+      background: rgba(134, 239, 172, 0.2);
+      color: #86efac;
+      border: 1px solid rgba(134, 239, 172, 0.3);
+    }
+
+    .task-assignee {
+      padding: 2px 6px;
+      background: var(--vscode-badge-background);
+      color: var(--vscode-badge-foreground);
+      border-radius: 3px;
+    }
+
+    .task-tag {
+      padding: 2px 6px;
+      background: var(--vscode-textCodeBlock-background);
+      color: var(--vscode-descriptionForeground);
+      border-radius: 3px;
+      opacity: 0.8;
     }
 
     .board-title-wrapper {
@@ -1698,6 +2086,31 @@ columns:
       line-height: 1.4;
     }
 
+    .stats-config-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--vscode-editor-foreground);
+      opacity: 0.9;
+    }
+
+    .checkbox-label:hover {
+      opacity: 1;
+    }
+
+    .stat-column-checkbox {
+      cursor: pointer;
+    }
+
     .settings-input {
       width: 100%;
       padding: 6px 8px;
@@ -1773,14 +2186,19 @@ columns:
       </div>
 
       <div class="stats">
-        <div class="stat">
-          <div class="stat-value">${totalTasks}</div>
-          <div class="stat-label">Total</div>
-        </div>
-        <div class="stat">
-          <div class="stat-value">${doneTasks}</div>
-          <div class="stat-label">Done</div>
-        </div>
+        ${this.getStatsHtml(board, totalTasks)}
+      </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+      <div class="search-container">
+        <input type="text"
+               id="searchInput"
+               class="search-input"
+               placeholder="Search tasks..."
+               autocomplete="off">
+        <button id="searchClear" class="search-clear" style="display: none;">×</button>
       </div>
     </div>
 
@@ -1803,6 +2221,9 @@ columns:
                  data-task-id="${task.id}"
                  data-column-id="${col.id}"
                  data-task-index="${index}"
+                 data-priority="${task.priority || ''}"
+                 data-assignee="${task.assignee || ''}"
+                 data-tags="${task.tags ? this.escapeHtml(JSON.stringify(task.tags)) : '[]'}"
                  draggable="true">
               <div class="task-header">
                 <span class="drag-handle">⋮⋮</span>
@@ -1814,6 +2235,15 @@ columns:
                 </div>
               </div>
               <div class="task-description">${this.renderMarkdown(task.description || '')}</div>
+              ${(task.priority || task.assignee || (task.tags && task.tags.length > 0)) ? `
+                <div class="task-metadata">
+                  ${task.priority ? `<span class="task-priority priority-${task.priority}">${task.priority}</span>` : ''}
+                  ${task.assignee ? `<span class="task-assignee">@${this.escapeHtml(task.assignee)}</span>` : ''}
+                  ${task.tags && task.tags.length > 0 ? task.tags.map(tag =>
+                    `<span class="task-tag">#${this.escapeHtml(tag)}</span>`
+                  ).join('') : ''}
+                </div>
+              ` : ''}
               ${task.subtasks && task.subtasks.length > 0 ? `
                 <div class="subtasks-container">
                   <div class="subtask-progress">
@@ -1929,7 +2359,32 @@ columns:
         <div class="settings-item">
           <label class="settings-label">Board File Location</label>
           <input type="text" class="settings-input" value="${this._boardFilePath || 'No file loaded'}" readonly>
-          <div class="settings-description">The current .bangbang.md file being displayed</div>
+          <div class="settings-description">The current bangbang.md file being displayed</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Stat Cards Configuration</div>
+        <div class="settings-item">
+          <label class="settings-label">Select columns to display as stat cards (max 4)</label>
+          <div class="stats-config-options">
+            ${board.columns.map(col => {
+              const isChecked = board.statsConfig?.columns?.includes(col.id) || false;
+              return `
+                <label class="checkbox-label">
+                  <input type="checkbox"
+                         class="stat-column-checkbox"
+                         data-column-id="${col.id}"
+                         ${isChecked ? 'checked' : ''}>
+                  <span>${this.escapeHtml(col.title)}</span>
+                </label>
+              `;
+            }).join('')}
+          </div>
+          <div class="settings-description">
+            Select which columns to display as stat cards. Leave all unchecked to use default (Total and Done).
+          </div>
+          <button class="edit-button primary" id="saveStatsConfig">Save Stats Configuration</button>
         </div>
       </div>
 
@@ -1948,30 +2403,87 @@ columns:
         <div class="settings-item">
           <div class="settings-description">
             BangBang is a protocol-first AI task management system.<br>
-            Edit your .bangbang.md file directly to manage tasks and rules.
+            Edit your bangbang.md file directly to manage tasks and rules.
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="edit-modal" id="editModal">
-    <div class="edit-modal-content">
-      <div class="edit-modal-title">Edit Task</div>
-      <input type="text" class="edit-input" id="editTitle" placeholder="Task title">
-      <textarea class="edit-input edit-textarea" id="editDescription" placeholder="Task description"></textarea>
-      <div class="edit-actions">
-        <button class="edit-button secondary" id="cancelEdit">Cancel</button>
-        <button class="edit-button primary" id="saveEdit">Save</button>
-      </div>
-    </div>
-  </div>
 
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
 
-    // Edit modal state
-    let currentEditTask = null;
+
+    // Search state and logic
+    let searchTerm = '';
+
+    function applySearch() {
+      const tasks = document.querySelectorAll('.task');
+
+      tasks.forEach(task => {
+        let shouldShow = true;
+
+        // Search filter - check title and description
+        if (searchTerm) {
+          const searchLower = searchTerm.toLowerCase();
+          const title = task.querySelector('.task-title')?.textContent?.toLowerCase() || '';
+          const description = task.querySelector('.task-description')?.textContent?.toLowerCase() || '';
+          const tags = task.querySelector('.task-metadata')?.textContent?.toLowerCase() || '';
+
+          if (!title.includes(searchLower) && !description.includes(searchLower) && !tags.includes(searchLower)) {
+            shouldShow = false;
+          }
+        }
+
+        // Apply visibility
+        if (shouldShow) {
+          task.classList.remove('filtered-out');
+        } else {
+          task.classList.add('filtered-out');
+        }
+      });
+
+      // Update column empty states
+      document.querySelectorAll('.column-section').forEach(column => {
+        const visibleTasks = column.querySelectorAll('.task:not(.filtered-out)');
+        const emptyState = column.querySelector('.empty-state');
+
+        if (visibleTasks.length === 0 && column.querySelectorAll('.task').length > 0) {
+          column.classList.add('all-filtered');
+          if (emptyState) {
+            emptyState.style.display = 'block';
+            emptyState.textContent = 'No matching tasks';
+          }
+        } else {
+          column.classList.remove('all-filtered');
+          if (emptyState && column.querySelectorAll('.task').length > 0) {
+            emptyState.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    // Search input handler
+    const searchInput = document.getElementById('searchInput');
+    const searchClear = document.getElementById('searchClear');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        searchTerm = e.target.value;
+        searchClear.style.display = e.target.value ? 'block' : 'none';
+        applySearch();
+      });
+    }
+
+    if (searchClear) {
+      searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        searchTerm = '';
+        searchClear.style.display = 'none';
+        applySearch();
+      });
+    }
 
     // Task expansion
     document.querySelectorAll('.task').forEach(taskEl => {
@@ -2011,21 +2523,18 @@ columns:
       });
     });
 
-    // Edit action
+    // Edit action - opens task in editor
     document.querySelectorAll('[data-action="edit"]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const taskEl = e.target.closest('.task');
         const taskId = taskEl.dataset.taskId;
-        const columnId = taskEl.dataset.columnId;
-        const title = taskEl.querySelector('.task-title').textContent;
-        const description = taskEl.querySelector('.task-description').textContent;
 
-        currentEditTask = { taskId, columnId };
-        document.getElementById('editTitle').value = title;
-        document.getElementById('editDescription').value = description;
-        document.getElementById('editModal').classList.add('show');
-        document.getElementById('editTitle').focus();
+        // Send message to open task in editor
+        vscode.postMessage({
+          type: 'editTask',
+          taskId: taskId
+        });
       });
     });
 
@@ -2061,39 +2570,6 @@ columns:
       });
     });
 
-    // Save edit
-    document.getElementById('saveEdit').addEventListener('click', () => {
-      if (!currentEditTask) return;
-
-      const title = document.getElementById('editTitle').value.trim();
-      const description = document.getElementById('editDescription').value.trim();
-
-      if (title) {
-        vscode.postMessage({
-          type: 'updateTask',
-          columnId: currentEditTask.columnId,
-          taskId: currentEditTask.taskId,
-          title: title,
-          description: description
-        });
-      }
-
-      document.getElementById('editModal').classList.remove('show');
-      currentEditTask = null;
-    });
-
-    // Cancel edit
-    document.getElementById('cancelEdit').addEventListener('click', () => {
-      document.getElementById('editModal').classList.remove('show');
-      currentEditTask = null;
-    });
-
-    // Close modal on ESC
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && document.getElementById('editModal').classList.contains('show')) {
-        document.getElementById('cancelEdit').click();
-      }
-    });
 
     // Drag and drop
     let draggedTask = null;
@@ -2280,6 +2756,20 @@ columns:
       });
     });
 
+    // Save stats config button
+    const saveStatsBtn = document.getElementById('saveStatsConfig');
+    if (saveStatsBtn) {
+      saveStatsBtn.addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('.stat-column-checkbox:checked');
+        const selectedColumns = Array.from(checkboxes).map(cb => cb.dataset.columnId);
+
+        vscode.postMessage({
+          type: 'saveStatsConfig',
+          columns: selectedColumns
+        });
+      });
+    }
+
     // Handle board updates from file changes
     let previousBoard = ${JSON.stringify(board)};
 
@@ -2334,6 +2824,9 @@ columns:
         expandedTasks.add(task.dataset.taskId);
       });
 
+      // Store current search state before updating
+      const currentSearchTerm = searchTerm;
+
       // Update tasks tab
       const tasksTab = document.getElementById('tasksTab');
       tasksTab.innerHTML = \`
@@ -2349,14 +2842,20 @@ columns:
           </div>
 
           <div class="stats">
-            <div class="stat">
-              <div class="stat-value">\${getTotalTasks(board)}</div>
-              <div class="stat-label">Total</div>
-            </div>
-            <div class="stat">
-              <div class="stat-value">\${getDoneTasks(board)}</div>
-              <div class="stat-label">Done</div>
-            </div>
+            \${getStatsHtmlForUpdate(board)}
+          </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+          <div class="search-container">
+            <input type="text"
+                   id="searchInput"
+                   class="search-input"
+                   placeholder="Search tasks..."
+                   value="\${currentSearchTerm}"
+                   autocomplete="off">
+            <button id="searchClear" class="search-clear" style="display: \${currentSearchTerm ? 'block' : 'none'};">×</button>
           </div>
         </div>
 
@@ -2379,6 +2878,9 @@ columns:
                      data-task-id="\${task.id}"
                      data-column-id="\${col.id}"
                      data-task-index="\${index}"
+                     data-priority="\${task.priority || ''}"
+                     data-assignee="\${task.assignee || ''}"
+                     data-tags="\${task.tags ? escapeHtml(JSON.stringify(task.tags)) : '[]'}"
                      draggable="true">
                   <div class="task-header">
                     <span class="drag-handle">⋮⋮</span>
@@ -2390,6 +2892,15 @@ columns:
                     </div>
                   </div>
                   <div class="task-description">\${renderMarkdown(task.description || '')}</div>
+                  \${(task.priority || task.assignee || (task.tags && task.tags.length > 0)) ? \`
+                    <div class="task-metadata">
+                      \${task.priority ? \`<span class="task-priority priority-\${task.priority}">\${task.priority}</span>\` : ''}
+                      \${task.assignee ? \`<span class="task-assignee">@\${escapeHtml(task.assignee)}</span>\` : ''}
+                      \${task.tags && task.tags.length > 0 ? task.tags.map(tag =>
+                        \`<span class="task-tag">#\${escapeHtml(tag)}</span>\`
+                      ).join('') : ''}
+                    </div>
+                  \` : ''}
                   \${task.subtasks && task.subtasks.length > 0 ? \`
                     <div class="subtasks-container">
                       <div class="subtask-progress">
@@ -2501,6 +3012,15 @@ columns:
       // Re-attach event listeners for tasks
       attachTaskEventListeners();
 
+      // Re-attach search event listeners
+      attachSearchEventListeners();
+
+      // Restore search state
+      searchTerm = currentSearchTerm;
+
+      // Apply search after restoring state
+      applySearch();
+
       // Restore expanded state
       expandedTasks.forEach(taskId => {
         const taskEl = document.querySelector(\`.task[data-task-id="\${taskId}"]\`);
@@ -2542,6 +3062,41 @@ columns:
         .replace(/\\n/g, '<br>');
     }
 
+    function getStatsHtmlForUpdate(board) {
+      const totalTasks = getTotalTasks(board);
+
+      // Check if custom stat columns are configured
+      if (board.statsConfig?.columns && board.statsConfig.columns.length > 0) {
+        // Use configured columns (max 4)
+        const statColumns = board.statsConfig.columns.slice(0, 4);
+        return statColumns.map(columnId => {
+          const column = board.columns.find(col => col.id === columnId);
+          if (column) {
+            return \`
+              <div class="stat">
+                <div class="stat-value">\${column.tasks.length}</div>
+                <div class="stat-label">\${escapeHtml(column.title)}</div>
+              </div>
+            \`;
+          }
+          return '';
+        }).join('');
+      } else {
+        // Default: Total and Done
+        const doneTasks = getDoneTasks(board);
+        return \`
+          <div class="stat">
+            <div class="stat-value">\${totalTasks}</div>
+            <div class="stat-label">Total</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">\${doneTasks}</div>
+            <div class="stat-label">Done</div>
+          </div>
+        \`;
+      }
+    }
+
     function attachTaskEventListeners() {
       // Re-attach all task-related event listeners
       document.querySelectorAll('.task').forEach(taskEl => {
@@ -2581,20 +3136,18 @@ columns:
         });
       });
 
+      // Re-attach edit actions - opens task in editor
       document.querySelectorAll('[data-action="edit"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const taskEl = e.target.closest('.task');
           const taskId = taskEl.dataset.taskId;
-          const columnId = taskEl.dataset.columnId;
-          const title = taskEl.querySelector('.task-title').textContent;
-          const description = taskEl.querySelector('.task-description').textContent;
 
-          currentEditTask = { taskId, columnId };
-          document.getElementById('editTitle').value = title;
-          document.getElementById('editDescription').value = description;
-          document.getElementById('editModal').classList.add('show');
-          document.getElementById('editTitle').focus();
+          // Send message to open task in editor
+          vscode.postMessage({
+            type: 'editTask',
+            taskId: taskId
+          });
         });
       });
 
@@ -2655,6 +3208,29 @@ columns:
 
       // Re-attach drag and drop
       attachDragAndDrop();
+    }
+
+    function attachSearchEventListeners() {
+      // Search input handler
+      const searchInput = document.getElementById('searchInput');
+      const searchClear = document.getElementById('searchClear');
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          searchTerm = e.target.value;
+          searchClear.style.display = e.target.value ? 'block' : 'none';
+          applySearch();
+        });
+      }
+
+      if (searchClear) {
+        searchClear.addEventListener('click', () => {
+          searchInput.value = '';
+          searchTerm = '';
+          searchClear.style.display = 'none';
+          applySearch();
+        });
+      }
     }
 
     function attachDragAndDrop() {

@@ -61,13 +61,13 @@ columns:
 
 ### VSCode Extension
 
-Download the latest release and install:
+Download the latest `.vsix` file from the [releases page](https://github.com/1broseidon/bangbang/releases/latest) and install:
 
 ```bash
-code --install-extension bangbang-0.4.0.vsix
+code --install-extension bangbang-VERSION.vsix
 ```
 
-Or install directly from the [releases page](https://github.com/1broseidon/bangbang/releases).
+Replace `VERSION` with the version number you downloaded.
 
 ## Features
 

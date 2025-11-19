@@ -1,0 +1,62 @@
+name: Build and Release VSIX
+
+on:
+  release:
+    types: [created]
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: vscode-extension/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./vscode-extension
+        run: npm ci
+      
+      - name: Compile TypeScript
+        working-directory: ./vscode-extension
+        run: npm run compile
+      
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+      
+      - name: Package VSIX
+        working-directory: ./vscode-extension
+        run: vsce package
+      
+      - name: Get version from package.json
+        id: package-version
+        working-directory: ./vscode-extension
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VSIX_FILE=bangbang-${VERSION}.vsix" >> $GITHUB_OUTPUT
+      
+      - name: Upload VSIX to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: vscode-extension/bangbang-${{ steps.package-version.outputs.VERSION }}.vsix
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload VSIX as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bangbang-vsix
+          path: vscode-extension/bangbang-*.vsix
+          retention-days: 90
+

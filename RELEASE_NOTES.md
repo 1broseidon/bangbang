@@ -77,9 +77,13 @@
 
 ## Installation
 
+Download the latest release from the [GitHub Releases page](https://github.com/1broseidon/bangbang/releases/latest), then:
+
 ```bash
-code --install-extension bangbang-0.4.0.vsix
+code --install-extension bangbang-VERSION.vsix
 ```
+
+Replace `VERSION` with the version number you downloaded.
 
 ## Upgrade Notes
 

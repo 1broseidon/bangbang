@@ -3,6 +3,77 @@ title: Archive
 columns: []
 archive:
     -
+        id: task-7
+        title: Add stats configuration UI
+        description: Added settings tab UI to configure which columns show as stat cards
+        priority: medium
+    -
+        id: task-6
+        title: Replace edit modal with file navigation
+        description: Edit button now opens the bangbang.md file at the task location for direct editing
+        priority: high
+    -
+        id: task-5
+        title: Fix search section padding
+        description: Made search section padding match other header cards
+        priority: low
+    -
+        id: task-4
+        title: Add configurable stat cards
+        description: Implemented support for up to 4 custom column stats via statsConfig
+        priority: medium
+    -
+        id: task-3
+        title: Simplify search interface
+        description: Removed complex filter dropdowns and kept only search box
+        priority: high
+    -
+        id: task-44
+        title: Protocol v0.4.0 Testing
+        description: Verify all non-hidden files work correctly with the VSCode extension
+        subtasks:
+            -
+                id: task-44-1
+                title: Test file discovery priority
+                completed: true
+            -
+                id: task-44-2
+                title: Verify agent instructions work
+                completed: true
+            -
+                id: task-44-3
+                title: Confirm backward compatibility
+                completed: true
+    -
+        id: task-43
+        title: Test Subtasks Feature Implementation
+        description: Verify subtasks rendering and progress tracking works correctly
+        subtasks:
+            -
+                id: task-43-1
+                title: Verify progress bar displays correctly
+                completed: true
+            -
+                id: task-43-2
+                title: Test checkbox styling for completed items
+                completed: true
+            -
+                id: task-43-3
+                title: Check subtask count display (2/4 format)
+                completed: true
+            -
+                id: task-43-4
+                title: Validate YAML serialization with subtasks
+                completed: true
+    -
+        id: task-42
+        title: Add Task Templates & Subtasks support
+        description: Support nested subtasks in YAML with visual progress indicators and templates for common task types
+    -
+        id: task-41
+        title: Implement Quick Add Task feature
+        description: Add command palette, keyboard shortcut (Cmd/Ctrl+Shift+T), and + buttons in column headers for quick task creation
+    -
         id: task-37
         title: Add "Clear Cache & Reload" button to Settings
         description: Added button in Settings tab with handleClearCache() method
