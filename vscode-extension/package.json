@@ -2,7 +2,7 @@
   "name": "bangbang",
   "displayName": "BangBang",
   "description": "Task management protocol for AI-assisted development",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "publisher": "bangbang",
   "repository": {
     "type": "git",
