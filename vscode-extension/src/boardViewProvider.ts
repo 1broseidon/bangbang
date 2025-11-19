@@ -20,6 +20,8 @@ export class BoardViewProvider implements vscode.WebviewViewProvider {
   private _lastContentHash?: string;
   private _writeDebounceTimer?: NodeJS.Timeout;
   private _pendingWrite?: { content: string; callback?: () => void };
+  private _lastValidBoard?: Board;
+  private _parseErrorCount: number = 0;
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
@@ -393,9 +395,12 @@ columns:
       clearTimeout(this._refreshTimer);
     }
 
+    // Use longer debounce for document changes to allow users to finish typing
+    const debounceTime = reason === 'document-change' ? 500 : 150;
+
     this._refreshTimer = setTimeout(() => {
       this.refreshBoardFromSource(reason);
-    }, 150);
+    }, debounceTime);
   }
 
   private async refreshBoardFromSource(reason: string) {
@@ -485,10 +490,33 @@ columns:
 
       if (!board) {
         log('Failed to parse board file');
-        this._view.webview.html = this.getErrorHtml('Failed to parse bangbang.md');
+        this._parseErrorCount++;
+        
+        // If we have a last valid board, show it with a warning banner
+        if (this._lastValidBoard && this._parseErrorCount <= 3) {
+          log('Showing last valid board with warning');
+          // Send a warning message to the webview
+          if (!this._isFirstRender) {
+            this._view.webview.postMessage({
+              type: 'parseWarning',
+              message: 'Syntax error in bangbang.md - showing last valid state'
+            });
+          }
+          // Don't update the view, keep showing the last valid board
+          return;
+        }
+        
+        // If no valid board or too many consecutive errors, show error page
+        this._view.webview.html = this.getErrorHtml(
+          'Failed to parse bangbang.md',
+          'Check for YAML syntax errors in the frontmatter. Common issues:\n• Missing colons after keys\n• Incorrect indentation\n• Unclosed quotes or brackets'
+        );
         return;
       }
 
+      // Successful parse - reset error count and save this board
+      this._parseErrorCount = 0;
+      this._lastValidBoard = board;
       this._lastContentHash = this.hashContent(content);
 
       // Load archive from separate file if it exists
@@ -566,13 +594,15 @@ columns:
         col.tasks = col.tasks.filter(t => t.id !== taskId);
         const newContent = BangBangParser.serialize(board);
 
-        // Use debounced write to prevent conflicts
-        this.debouncedWrite(newContent, () => {
-          log('Task deleted successfully');
-        });
+        // Write synchronously like archive does to ensure immediate UI update
+        fs.writeFileSync(this._boardFilePath, newContent, 'utf8');
+        log('Task deleted successfully');
 
-        // Immediately update the view
-        this.updateView();
+        // Update hash to prevent double update from file watcher
+        this._lastContentHash = this.hashContent(newContent);
+
+        // Immediately update the view with the new content
+        this.updateView(false, newContent);
         return;
       }
     }
@@ -2780,6 +2810,12 @@ columns:
         const newBoard = message.board;
         const activeTab = document.querySelector('.tab.active').dataset.tab;
 
+        // Clear any parse warnings on successful update
+        const warningBanner = document.getElementById('parseWarningBanner');
+        if (warningBanner) {
+          warningBanner.remove();
+        }
+
         // Check what changed
         const tasksChanged = JSON.stringify(newBoard.columns) !== JSON.stringify(previousBoard.columns);
         const rulesChanged = JSON.stringify(newBoard.rules) !== JSON.stringify(previousBoard.rules);
@@ -2803,6 +2839,16 @@ columns:
 
         // Rebuild the tabs content (but don't switch tabs)
         updateTabsContent(newBoard, activeTab);
+      } else if (message.type === 'parseWarning') {
+        // Show warning banner if not already present
+        let warningBanner = document.getElementById('parseWarningBanner');
+        if (!warningBanner) {
+          warningBanner = document.createElement('div');
+          warningBanner.id = 'parseWarningBanner';
+          warningBanner.style.cssText = 'background: var(--vscode-inputValidation-warningBackground); color: var(--vscode-inputValidation-warningForeground); border: 1px solid var(--vscode-inputValidation-warningBorder); padding: 8px 12px; margin: 8px; border-radius: 4px; font-size: 12px;';
+          warningBanner.textContent = '⚠️ ' + message.message;
+          document.body.insertBefore(warningBanner, document.body.firstChild);
+        }
       }
     });
 
@@ -3312,7 +3358,7 @@ columns:
 </html>`;
   }
 
-  private getErrorHtml(message: string): string {
+  private getErrorHtml(message: string, details?: string): string {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -3320,13 +3366,25 @@ columns:
   <style>
     body {
       padding: 20px;
-      color: var(--vscode-errorForeground);
+      color: var(--vscode-foreground);
       font-family: var(--vscode-font-family);
+    }
+    .error-title {
+      color: var(--vscode-errorForeground);
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+    .error-details {
+      color: var(--vscode-descriptionForeground);
+      white-space: pre-line;
+      line-height: 1.6;
+      margin-top: 8px;
     }
   </style>
 </head>
 <body>
-  <p>Error: ${this.escapeHtml(message)}</p>
+  <div class="error-title">Error: ${this.escapeHtml(message)}</div>
+  ${details ? `<div class="error-details">${this.escapeHtml(details)}</div>` : ''}
 </body>
 </html>`;
   }

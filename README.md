@@ -61,13 +61,29 @@ columns:
 
 ### VSCode Extension
 
-Download the latest `.vsix` file from the [releases page](https://github.com/1broseidon/bangbang/releases/latest) and install:
+Install the latest release with one command:
 
 ```bash
-code --install-extension bangbang-VERSION.vsix
+code --install-extension $(curl -s https://api.github.com/repos/1broseidon/bangbang/releases/latest | grep browser_download_url | grep '.vsix"' | head -n 1 | cut -d '"' -f 4 | xargs curl -sL -o bangbang.vsix && echo bangbang.vsix)
 ```
 
-Replace `VERSION` with the version number you downloaded.
+Or download manually from the [releases page](https://github.com/1broseidon/bangbang/releases/latest).
+
+## Release Workflow
+
+When you are ready to cut a new extension release, run the automated Make target from the repo root:
+
+```bash
+VERSION=0.4.3 make release
+```
+
+This does the following:
+
+1. Verifies the git working tree is clean
+2. Runs `npm version` inside `vscode-extension` to bump `package.json` and `package-lock.json`, commit, and tag `vVERSION`
+3. Pushes both the commit and the `vVERSION` tag to your remote (defaults to `origin`)
+
+Pass a different remote via `REMOTE=myfork make release` if needed. Once the tag is pushed, GitHub automatically triggers the release workflow and publishes the VSIX built from the matching version.
 
 ## Features
 

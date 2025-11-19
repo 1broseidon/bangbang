@@ -3,6 +3,78 @@ title: Archive
 columns: []
 archive:
     -
+        id: task-4
+        title: Fix delete task to update UI instantly
+        description: Delete was using debounced write causing UI to show stale data
+        priority: high
+        relatedFiles:
+            - vscode-extension/src/boardViewProvider.ts
+    -
+        id: task-3
+        title: Add make build and make install targets
+        description: Provide convenient commands to build and install extension locally
+        priority: medium
+        relatedFiles:
+            - Makefile
+            - .gitignore
+    -
+        id: task-2
+        title: Make parser forgiving of temporary YAML errors
+        description: Extension should gracefully handle syntax errors while user is typing
+        priority: high
+        relatedFiles:
+            - vscode-extension/src/boardViewProvider.ts
+            - vscode-extension/src/parser.ts
+        subtasks:
+            -
+                id: task-2-1
+                title: Add longer debounce for document changes (500ms)
+                completed: true
+            -
+                id: task-2-2
+                title: Cache last valid board state
+                completed: true
+            -
+                id: task-2-3
+                title: Show warning banner instead of error on parse failure
+                completed: true
+            -
+                id: task-2-4
+                title: Improve error messages with helpful hints
+                completed: true
+    -
+        id: task-6
+        title: Simplify README install instructions
+        description: Update README with curl + code install steps for latest release
+        priority: medium
+        relatedFiles:
+            - README.md
+    -
+        id: task-5
+        title: Document make release workflow
+        description: Explain how to run make release and what it does
+        priority: medium
+    -
+        id: task-4
+        title: Add make release automation
+        description: Provide a Makefile target to bump version and tag
+        priority: high
+    -
+        id: task-3
+        title: Sync package-lock version metadata
+        description: Ensure package-lock version updated to 0.4.2
+        priority: medium
+    -
+        id: task-2
+        title: Bump VSCode extension to 0.4.2
+        description: Update package.json version to match release tag
+        priority: high
+    -
+        id: task-ci-version
+        title: Align CI release tag with package version
+        description: Ensure CI release tag matches npm package version
+        priority: high
+    -
         id: task-7
         title: Add stats configuration UI
         description: Added settings tab UI to configure which columns show as stat cards

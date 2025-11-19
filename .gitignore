@@ -6,6 +6,7 @@ npm-debug.log*
 # Build outputs
 out/
 dist/
+build/
 *.vsix
 
 # IDE
